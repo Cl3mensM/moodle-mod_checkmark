@@ -15,13 +15,11 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Language strings for the simple checkmark add-on fixture.
+ * Language strings for the Checkmark random selection add-on.
  *
- * @package   checkmarkaddon_simple
+ * @package   checkmark_randomselect
  * @copyright 2026 Academic Moodle Cooperation {@link http://www.academic-moodle-cooperation.org}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['configtext'] = 'Simple Checkmark fixture setting';
-$string['configtext_desc'] = 'Fixture setting used by the Checkmark add-on tests.';
-$string['pluginname'] = 'Simple Checkmark add-on';
+$string['pluginname'] = 'Random selection';

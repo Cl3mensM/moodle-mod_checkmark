@@ -15,15 +15,13 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version details for the simple checkmark add-on fixture.
+ * Language strings for the simple checkmark add-on fixture.
  *
  * @package   checkmark_simple
  * @copyright 2026 Academic Moodle Cooperation {@link http://www.academic-moodle-cooperation.org}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-defined('MOODLE_INTERNAL') || die();
-
-$plugin->component = 'checkmark_simple';
-$plugin->version = 2026061000;
-$plugin->requires = 2025100600;
+$string['configtext'] = 'Simple Checkmark fixture setting';
+$string['configtext_desc'] = 'Fixture setting used by the Checkmark add-on tests.';
+$string['pluginname'] = 'Simple Checkmark add-on';

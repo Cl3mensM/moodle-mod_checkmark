@@ -161,10 +161,10 @@ require_once($CFG->dirroot . '/mod/checkmark/adminlib.php');
 
 $ADMIN->add(
     'modcheckmarkfolder',
-    new admin_category('checkmarkaddonplugins', new lang_string('checkmarkaddons', 'checkmark'), !$module->is_enabled())
+    new admin_category('checkmarkplugins', new lang_string('checkmarkplugins', 'checkmark'), !$module->is_enabled())
 );
-$ADMIN->add('checkmarkaddonplugins', new checkmark_admin_page_manage_checkmark_plugins('checkmarkaddon'));
+$ADMIN->add('checkmarkplugins', new checkmark_admin_page_manage_checkmark_plugins('checkmark'));
 
-foreach (core_plugin_manager::instance()->get_plugins_of_type('checkmarkaddon') as $plugin) {
-    $plugin->load_settings($ADMIN, 'checkmarkaddonplugins', $hassiteconfig);
+foreach (core_plugin_manager::instance()->get_plugins_of_type('checkmark') as $plugin) {
+    $plugin->load_settings($ADMIN, 'checkmarkplugins', $hassiteconfig);
 }

@@ -116,7 +116,7 @@ class provider implements core_userlist_provider, metadataprovider, pluginprovid
         $collection->add_user_preference('checkmark_zipped', 'privacy:metadata:pref:zipped');
 
         // Link to subplugins and subsystems.
-        $collection->add_plugintype_link('checkmarkaddon', [], 'privacy:metadata:checkmarkaddonsummary');
+        $collection->add_plugintype_link('checkmark', [], 'privacy:metadata:checkmarksubpluginsummary');
         $collection->add_subsystem_link('core_message', [], 'privacy:metadata:subsys:message');
 
         return $collection;

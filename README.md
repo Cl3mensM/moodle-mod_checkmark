@@ -38,19 +38,19 @@ Furthermore there is an additional report available [Checkmark report](https://m
 Subplugins
 ----------
 
-Checkmark supports add-on subplugins. Add-ons are installed in `mod/checkmark/addon/<name>` and use the Frankenstyle component name `checkmarkaddon_<name>`.
+Checkmark supports add-on subplugins. Add-ons are installed in `mod/checkmark/addon/<name>` and use the Frankenstyle component name `checkmark_<name>`.
 
 A minimal add-on requires at least:
 
 ```text
 mod/checkmark/addon/example/version.php
-mod/checkmark/addon/example/lang/en/checkmarkaddon_example.php
+mod/checkmark/addon/example/lang/en/checkmark_example.php
 ```
 
 The `version.php` file must declare the matching component:
 
 ```php
-$plugin->component = 'checkmarkaddon_example';
+$plugin->component = 'checkmark_example';
 ```
 
 Add-ons may provide their own `settings.php`. Installed add-ons and their settings are available in the Moodle site administration under the Checkmark administration area.

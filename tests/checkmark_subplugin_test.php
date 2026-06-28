@@ -38,20 +38,31 @@ require_once($CFG->dirroot . '/mod/checkmark/adminlib.php');
  * @copyright 2026 Academic Moodle Cooperation {@link http://www.academic-moodle-cooperation.org}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-#[\PHPUnit\Framework\Attributes\CoversClass(\mod_checkmark\plugininfo\checkmarkaddon::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\mod_checkmark\plugininfo\checkmark::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_plugin_manager::class)]
-final class checkmarkaddon_test extends \advanced_testcase {
+final class checkmark_subplugin_test extends \advanced_testcase {
     /**
      * Checkmark declares the add-on subplugin type.
      */
-    public function test_checkmarkaddon_type_is_registered(): void {
+    public function test_checkmark_type_is_registered(): void {
         $plugintypes = \core_component::get_plugin_types();
         $subplugins = \core_component::get_subplugins('mod_checkmark');
 
-        $this->assertArrayHasKey('checkmarkaddon', $plugintypes);
-        $this->assertStringEndsWith('/mod/checkmark/addon', $plugintypes['checkmarkaddon']);
-        $this->assertArrayHasKey('checkmarkaddon', $subplugins);
-        $this->assertIsArray($subplugins['checkmarkaddon']);
+        $this->assertArrayHasKey('checkmark', $plugintypes);
+        $this->assertStringEndsWith('/mod/checkmark/addon', $plugintypes['checkmark']);
+        $this->assertArrayHasKey('checkmark', $subplugins);
+        $this->assertIsArray($subplugins['checkmark']);
+    }
+
+    /**
+     * Checkmark includes the random selection add-on scaffold.
+     */
+    public function test_randomselect_addon_scaffold_is_discoverable(): void {
+        $plugins = \core_component::get_plugin_list('checkmark');
+
+        $this->assertArrayHasKey('randomselect', $plugins);
+        $this->assertFileExists($plugins['randomselect'] . '/version.php');
+        $this->assertFileExists($plugins['randomselect'] . '/lang/en/checkmark_randomselect.php');
     }
 
     /**
@@ -63,25 +74,25 @@ final class checkmarkaddon_test extends \advanced_testcase {
 
         $this->add_simple_fixture_addon();
 
-        $plugins = \core_component::get_plugin_list('checkmarkaddon');
+        $plugins = \core_component::get_plugin_list('checkmark');
         $this->assertArrayHasKey('simple', $plugins);
         $subplugins = \core_component::get_subplugins('mod_checkmark');
-        $this->assertContains('simple', $subplugins['checkmarkaddon']);
+        $this->assertContains('simple', $subplugins['checkmark']);
 
-        $plugininfo = \core_plugin_manager::instance()->get_plugin_info('checkmarkaddon_simple');
-        $this->assertInstanceOf(\mod_checkmark\plugininfo\checkmarkaddon::class, $plugininfo);
-        $this->assertSame('checkmarkaddon_simple', $plugininfo->get_settings_section_name());
+        $plugininfo = \core_plugin_manager::instance()->get_plugin_info('checkmark_simple');
+        $this->assertInstanceOf(\mod_checkmark\plugininfo\checkmark::class, $plugininfo);
+        $this->assertSame('checkmark_simple', $plugininfo->get_settings_section_name());
         $this->assertSame('Simple Checkmark add-on', $plugininfo->displayname);
         $this->assertTrue($plugininfo->is_installed_and_upgraded());
 
-        $manager = new \checkmark_plugin_manager('checkmarkaddon');
-        $this->assertSame(['simple'], array_values($manager->get_sorted_plugins_list()));
+        $manager = new \checkmark_plugin_manager('checkmark');
+        $this->assertContains('simple', array_values($manager->get_sorted_plugins_list()));
 
         $manager->hide_plugin('simple');
-        $this->assertSame(1, (int) get_config('checkmarkaddon_simple', 'disabled'));
+        $this->assertSame(1, (int) get_config('checkmark_simple', 'disabled'));
 
         $manager->show_plugin('simple');
-        $this->assertSame(0, (int) get_config('checkmarkaddon_simple', 'disabled'));
+        $this->assertSame(0, (int) get_config('checkmark_simple', 'disabled'));
     }
 
     /**
@@ -91,11 +102,11 @@ final class checkmarkaddon_test extends \advanced_testcase {
         global $CFG;
 
         $plugindir = $CFG->dirroot . '/mod/checkmark/tests/fixtures/addon/simple';
-        $this->add_mocked_plugin('checkmarkaddon', 'simple', $plugindir);
+        $this->add_mocked_plugin('checkmark', 'simple', $plugindir);
 
         $mockedcomponent = new \ReflectionClass(\core_component::class);
         $subplugins = $mockedcomponent->getStaticPropertyValue('subplugins');
-        $subplugins['mod_checkmark']['checkmarkaddon'][] = 'simple';
+        $subplugins['mod_checkmark']['checkmark'][] = 'simple';
         $mockedcomponent->setStaticPropertyValue('subplugins', $subplugins);
 
         $plugin = new \stdClass();
