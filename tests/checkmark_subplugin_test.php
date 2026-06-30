@@ -63,6 +63,51 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         $this->assertArrayHasKey('randomselect', $plugins);
         $this->assertFileExists($plugins['randomselect'] . '/version.php');
         $this->assertFileExists($plugins['randomselect'] . '/lang/en/checkmark_randomselect.php');
+        $this->assertFileExists($plugins['randomselect'] . '/settings.php');
+    }
+
+    /**
+     * Random selection registers a default setting for existing presentations.
+     */
+    public function test_randomselect_include_existing_presentations_setting_is_registered(): void {
+        global $CFG;
+
+        $this->resetAfterTest(true);
+
+        require_once($CFG->libdir . '/adminlib.php');
+
+        $plugins = \core_component::get_plugin_list('checkmark');
+        $settings = new \admin_settingpage('checkmark_randomselect', 'Random selection');
+        include($plugins['randomselect'] . '/settings.php');
+
+        $registeredsettings = get_object_vars($settings->settings);
+        $this->assertCount(1, $registeredsettings);
+
+        $setting = reset($registeredsettings);
+        $this->assertInstanceOf(\admin_setting_configselect::class, $setting);
+        $this->assertSame('checkmark_randomselect', $setting->plugin);
+        $this->assertSame(\checkmark_randomselect\settings::INCLUDE_EXISTING_PRESENTATIONS, $setting->name);
+        $this->assertSame(0, $setting->get_defaultsetting());
+        $this->assertSame([0 => get_string('no'), 1 => get_string('yes')], $setting->choices);
+    }
+
+    /**
+     * Random selection reads the default setting live from plugin config.
+     */
+    public function test_randomselect_include_existing_presentations_default_is_read_live(): void {
+        $this->resetAfterTest(true);
+
+        unset_config(
+            \checkmark_randomselect\settings::INCLUDE_EXISTING_PRESENTATIONS,
+            'checkmark_randomselect'
+        );
+        $this->assertFalse(\checkmark_randomselect\settings::include_existing_presentations_by_default());
+
+        set_config(\checkmark_randomselect\settings::INCLUDE_EXISTING_PRESENTATIONS, 1, 'checkmark_randomselect');
+        $this->assertTrue(\checkmark_randomselect\settings::include_existing_presentations_by_default());
+
+        set_config(\checkmark_randomselect\settings::INCLUDE_EXISTING_PRESENTATIONS, 0, 'checkmark_randomselect');
+        $this->assertFalse(\checkmark_randomselect\settings::include_existing_presentations_by_default());
     }
 
     /**

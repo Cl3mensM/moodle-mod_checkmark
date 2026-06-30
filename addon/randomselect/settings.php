@@ -15,13 +15,22 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Language strings for the Checkmark random selection add-on.
+ * Admin settings for the Checkmark random selection add-on.
  *
  * @package   checkmark_randomselect
  * @copyright 2026 Academic Moodle Cooperation {@link http://www.academic-moodle-cooperation.org}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
-$string['includeexistingpresentations'] = 'Include participants with existing presentation';
-$string['includeexistingpresentations_desc'] = 'Defines the default setting for whether existing presentations are included for the selected checkmark activities. If set to No, participants with existing presentations will not be considered in the current random selection, and only those without presentations will be potentially selected.';
-$string['pluginname'] = 'Random selection';
+defined('MOODLE_INTERNAL') || die();
+
+$settings->add(new admin_setting_configselect(
+    'checkmark_randomselect/' . \checkmark_randomselect\settings::INCLUDE_EXISTING_PRESENTATIONS,
+    new lang_string('includeexistingpresentations', 'checkmark_randomselect'),
+    new lang_string('includeexistingpresentations_desc', 'checkmark_randomselect'),
+    0,
+    [
+        0 => get_string('no'),
+        1 => get_string('yes'),
+    ]
+));
