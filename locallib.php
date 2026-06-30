@@ -1247,8 +1247,14 @@ class checkmark {
             $gradebtntype = 'btn-primary';
         }
         $context = context_module::instance($this->cm->id);
+        $submitted .= \checkmark_randomselect\access::render_start_button(
+            $context,
+            $this->cm->id,
+            new moodle_url('/mod/checkmark/view.php', ['id' => $this->cm->id]),
+            ['class' => 'btn btn-secondary mr-1 ml-0']
+        );
         if (has_capability('mod/checkmark:grade', $context)) {
-            $submitted = html_writer::tag('a', get_string('gradebutton', 'checkmark'), [
+            $submitted .= html_writer::tag('a', get_string('gradebutton', 'checkmark'), [
                 'class' => 'btn ' . $gradebtntype . ' mr-1 ml-0',
                 'href' => $urlbase . 'submissions.php?id=' . $this->cm->id,
                 'id' => 'submissions',
@@ -3238,6 +3244,12 @@ class checkmark {
             'href' => $urlbase . 'submissions.php?id=' . $this->cm->id,
             'id' => 'submissions',
         ]);
+        echo \checkmark_randomselect\access::render_start_button(
+            $this->context,
+            $this->cm->id,
+            new moodle_url('/mod/checkmark/submissions.php', ['id' => $this->cm->id]),
+            ['class' => 'btn btn-secondary float-right mr-1']
+        );
 
         echo html_writer::start_tag('div', ['class' => 'usersubmissions']);
 

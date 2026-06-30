@@ -15,7 +15,7 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version details for the Checkmark random selection add-on.
+ * Capability definitions for the Checkmark random selection add-on.
  *
  * @package   checkmark_randomselect
  * @copyright 2026 Academic Moodle Cooperation {@link http://www.academic-moodle-cooperation.org}
@@ -24,6 +24,15 @@
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'checkmark_randomselect';
-$plugin->version = 2026062600;
-$plugin->requires = 2025100600;
+$capabilities = [
+    'checkmark/randomselect:use' => [
+        'riskbitmask' => RISK_XSS,
+        'captype' => 'write',
+        'contextlevel' => CONTEXT_MODULE,
+        'archetypes' => [
+            'teacher' => CAP_ALLOW,
+            'editingteacher' => CAP_ALLOW,
+            'manager' => CAP_ALLOW,
+        ],
+    ],
+];

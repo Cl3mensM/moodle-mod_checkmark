@@ -29,6 +29,7 @@ defined('MOODLE_INTERNAL') || die();
 
 global $CFG;
 require_once($CFG->dirroot . '/mod/checkmark/adminlib.php');
+require_once($CFG->dirroot . '/mod/checkmark/locallib.php');
 
 /**
  * Tests for Checkmark add-on subplugin support.
@@ -40,6 +41,7 @@ require_once($CFG->dirroot . '/mod/checkmark/adminlib.php');
  */
 #[\PHPUnit\Framework\Attributes\CoversClass(\mod_checkmark\plugininfo\checkmark::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_plugin_manager::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_randomselect\access::class)]
 final class checkmark_subplugin_test extends \advanced_testcase {
     /**
      * Checkmark declares the add-on subplugin type.
@@ -64,6 +66,8 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         $this->assertFileExists($plugins['randomselect'] . '/version.php');
         $this->assertFileExists($plugins['randomselect'] . '/lang/en/checkmark_randomselect.php');
         $this->assertFileExists($plugins['randomselect'] . '/settings.php');
+        $this->assertFileExists($plugins['randomselect'] . '/db/access.php');
+        $this->assertFileExists($plugins['randomselect'] . '/index.php');
     }
 
     /**
@@ -108,6 +112,129 @@ final class checkmark_subplugin_test extends \advanced_testcase {
 
         set_config(\checkmark_randomselect\settings::INCLUDE_EXISTING_PRESENTATIONS, 0, 'checkmark_randomselect');
         $this->assertFalse(\checkmark_randomselect\settings::include_existing_presentations_by_default());
+    }
+
+    /**
+     * Random selection declares the use capability for teachers.
+     */
+    public function test_randomselect_use_capability_is_declared(): void {
+        $plugins = \core_component::get_plugin_list('checkmark');
+        $capabilities = [];
+
+        include($plugins['randomselect'] . '/db/access.php');
+
+        $this->assertArrayHasKey(\checkmark_randomselect\access::CAPABILITY, $capabilities);
+        $capability = $capabilities[\checkmark_randomselect\access::CAPABILITY];
+        $this->assertSame(RISK_XSS, $capability['riskbitmask']);
+        $this->assertSame('write', $capability['captype']);
+        $this->assertSame(CONTEXT_MODULE, $capability['contextlevel']);
+        $this->assertSame(CAP_ALLOW, $capability['archetypes']['teacher']);
+        $this->assertSame(CAP_ALLOW, $capability['archetypes']['editingteacher']);
+        $this->assertSame(CAP_ALLOW, $capability['archetypes']['manager']);
+    }
+
+    /**
+     * Random selection access depends on add-on state and the use capability.
+     */
+    public function test_randomselect_access_checks_enabled_state_and_capability(): void {
+        $this->resetAfterTest(true);
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $teacher = $generator->create_user();
+        $student = $generator->create_user();
+        $generator->enrol_user($teacher->id, $course->id, 'teacher');
+        $generator->enrol_user($student->id, $course->id, 'student');
+        $checkmark = $generator->create_module('checkmark', ['course' => $course->id]);
+        $context = \context_module::instance($checkmark->cmid);
+
+        set_config('disabled', 0, 'checkmark_randomselect');
+
+        $this->setUser($teacher);
+        $this->assertTrue(\checkmark_randomselect\access::can_use($context));
+
+        $this->setUser($student);
+        $this->assertFalse(\checkmark_randomselect\access::can_use($context));
+
+        set_config('disabled', 1, 'checkmark_randomselect');
+
+        $this->setUser($teacher);
+        $this->assertFalse(\checkmark_randomselect\access::can_use($context));
+    }
+
+    /**
+     * Random selection start button links to the add-on page and preserves the return URL.
+     */
+    public function test_randomselect_start_button_links_to_addon_page(): void {
+        $this->resetAfterTest(true);
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $teacher = $generator->create_user();
+        $generator->enrol_user($teacher->id, $course->id, 'teacher');
+        $checkmark = $generator->create_module('checkmark', ['course' => $course->id]);
+        $context = \context_module::instance($checkmark->cmid);
+
+        set_config('disabled', 0, 'checkmark_randomselect');
+        $this->setUser($teacher);
+
+        $button = \checkmark_randomselect\access::render_start_button(
+            $context,
+            $checkmark->cmid,
+            new \moodle_url('/mod/checkmark/view.php', ['id' => $checkmark->cmid])
+        );
+
+        $this->assertStringContainsString(
+            get_string('startpresentationrandomselection', 'checkmark_randomselect'),
+            $button
+        );
+        $this->assertStringContainsString('/mod/checkmark/addon/randomselect/index.php', $button);
+        $this->assertStringContainsString('returnurl=', $button);
+
+        set_config('disabled', 1, 'checkmark_randomselect');
+        $this->assertSame(
+            '',
+            \checkmark_randomselect\access::render_start_button(
+                $context,
+                $checkmark->cmid,
+                new \moodle_url('/mod/checkmark/view.php', ['id' => $checkmark->cmid])
+            )
+        );
+    }
+
+    /**
+     * Random selection is linked from the Checkmark activity start page for users with access.
+     */
+    public function test_randomselect_start_button_is_added_to_checkmark_button_group(): void {
+        $this->resetAfterTest(true);
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $teacher = $generator->create_user();
+        $generator->enrol_user($teacher->id, $course->id, 'teacher');
+        $checkmarkrecord = $generator->create_module('checkmark', ['course' => $course->id]);
+        $checkmark = new \checkmark($checkmarkrecord->cmid);
+
+        set_config('disabled', 0, 'checkmark_randomselect');
+        $this->setUser($teacher);
+
+        $buttons = $checkmark->buttongroup((object)['submissionssubmittedcount' => 0]);
+
+        $this->assertStringContainsString(
+            get_string('startpresentationrandomselection', 'checkmark_randomselect'),
+            $buttons
+        );
+        $this->assertStringContainsString('/mod/checkmark/addon/randomselect/index.php', $buttons);
+        $this->assertLessThan(
+            strpos($buttons, get_string('gradebutton', 'checkmark')),
+            strpos($buttons, get_string('startpresentationrandomselection', 'checkmark_randomselect'))
+        );
+
+        set_config('disabled', 1, 'checkmark_randomselect');
+        $this->assertStringNotContainsString(
+            get_string('startpresentationrandomselection', 'checkmark_randomselect'),
+            $checkmark->buttongroup((object)['submissionssubmittedcount' => 0])
+        );
     }
 
     /**

@@ -25,3 +25,6 @@
 $string['includeexistingpresentations'] = 'Include participants with existing presentation';
 $string['includeexistingpresentations_desc'] = 'Defines the default setting for whether existing presentations are included for the selected checkmark activities. If set to No, participants with existing presentations will not be considered in the current random selection, and only those without presentations will be potentially selected.';
 $string['pluginname'] = 'Random selection';
+$string['randomselectionforpresentation'] = 'Random selection for presentation';
+$string['randomselectnotavailable'] = 'The random selection add-on is not available.';
+$string['startpresentationrandomselection'] = 'Start random selection for presentation';
