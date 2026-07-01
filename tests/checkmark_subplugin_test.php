@@ -42,6 +42,7 @@ require_once($CFG->dirroot . '/mod/checkmark/locallib.php');
 #[\PHPUnit\Framework\Attributes\CoversClass(\mod_checkmark\plugininfo\checkmark::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_plugin_manager::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_randomselect\access::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_randomselect\output\page::class)]
 final class checkmark_subplugin_test extends \advanced_testcase {
     /**
      * Checkmark declares the add-on subplugin type.
@@ -68,6 +69,9 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         $this->assertFileExists($plugins['randomselect'] . '/settings.php');
         $this->assertFileExists($plugins['randomselect'] . '/db/access.php');
         $this->assertFileExists($plugins['randomselect'] . '/index.php');
+        $this->assertFileExists($plugins['randomselect'] . '/templates/page.mustache');
+        $this->assertFileExists($plugins['randomselect'] . '/amd/src/randomselect_layout.js');
+        $this->assertFileExists($plugins['randomselect'] . '/amd/build/randomselect_layout.min.js');
     }
 
     /**
@@ -235,6 +239,43 @@ final class checkmark_subplugin_test extends \advanced_testcase {
             get_string('startpresentationrandomselection', 'checkmark_randomselect'),
             $checkmark->buttongroup((object)['submissionssubmittedcount' => 0])
         );
+    }
+
+    /**
+     * Random selection page exports the ticket #8752 layout data.
+     */
+    public function test_randomselect_page_layout_is_exported(): void {
+        global $PAGE;
+
+        $page = new \checkmark_randomselect\output\page(
+            new \moodle_url('/mod/checkmark/view.php', ['id' => 23])
+        );
+
+        $data = $page->export_for_template($PAGE->get_renderer('core'));
+
+        $this->assertStringContainsString(
+            'Here, you can randomly select participants for a presentation.',
+            $data['pageintro']
+        );
+        $this->assertCount(2, $data['sections']);
+        $this->assertSame('checkmark-randomselect-filtercriteria', $data['sections'][0]['id']);
+        $this->assertSame(get_string('filtercriteria', 'checkmark_randomselect'), $data['sections'][0]['title']);
+        $this->assertNotEmpty($data['sections'][0]['helpicon']);
+        $this->assertSame('checkmark-randomselect-fieldofapplication', $data['sections'][1]['id']);
+        $this->assertSame(get_string('fieldofapplication', 'checkmark_randomselect'), $data['sections'][1]['title']);
+        $this->assertNotEmpty($data['sections'][1]['helpicon']);
+        $this->assertSame(get_string('preview', 'checkmark_randomselect'), $data['previewtitle']);
+        $this->assertNotEmpty($data['previewhelpicon']);
+        $this->assertSame(
+            get_string('applyrandomselection', 'checkmark_randomselect'),
+            $data['applybuttonlabel']
+        );
+        $this->assertSame(
+            get_string('createnewpreview', 'checkmark_randomselect'),
+            $data['createpreviewbuttonlabel']
+        );
+        $this->assertSame(get_string('cancel'), $data['cancelbuttonlabel']);
+        $this->assertStringContainsString('/mod/checkmark/view.php?id=23', $data['cancelurl']);
     }
 
     /**

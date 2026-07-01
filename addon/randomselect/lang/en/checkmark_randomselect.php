@@ -22,9 +22,18 @@
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
+$string['applyrandomselection'] = 'Apply random selection';
+$string['createnewpreview'] = 'Create new preview';
+$string['fieldofapplication'] = 'Field of application';
+$string['fieldofapplication_help'] = 'Here you can specify which examples from the current checkmark activity you wish to assign to how many participants.';
+$string['filtercriteria'] = 'Filter criteria';
+$string['filtercriteria_help'] = 'Using the filter criteria, you can specify the data on which you wish to base your random selection: which checkmark activities from the current course, and whether students with existing presentation should be included.';
 $string['includeexistingpresentations'] = 'Include participants with existing presentation';
 $string['includeexistingpresentations_desc'] = 'Defines the default setting for whether existing presentations are included for the selected checkmark activities. If set to No, participants with existing presentations will not be considered in the current random selection, and only those without presentations will be potentially selected.';
+$string['pageintro'] = 'Here, you can randomly select participants for a presentation.<br>By default, all checkmark activities and students are included in the allocation. Optionally, you can filter by data of available checkmark activities and specify how to random select students for examples.';
 $string['pluginname'] = 'Random selection';
+$string['preview'] = 'Preview';
+$string['preview_help'] = 'Here you can see a suggestion for the random selection of students for examples of the current checkmark activity. You can create a new preview/ new proposal at any time and then apply the proposed allocation.';
 $string['randomselectionforpresentation'] = 'Random selection for presentation';
 $string['randomselectnotavailable'] = 'The random selection add-on is not available.';
 $string['startpresentationrandomselection'] = 'Start random selection for presentation';
