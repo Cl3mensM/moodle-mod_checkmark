@@ -18,7 +18,6 @@
  *
  * @module     checkmark_randomselect/randomselect_layout
  * @copyright  2026 Academic Moodle Cooperation {@link http://www.academic-moodle-cooperation.org}
- * @license    http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 define(['theme_boost/bootstrap/collapse', 'core/pending'], function(Collapse, Pending) {
     const BootstrapCollapse = Collapse.default || Collapse;
@@ -26,11 +25,19 @@ define(['theme_boost/bootstrap/collapse', 'core/pending'], function(Collapse, Pe
 
     const SELECTORS = {
         COLLAPSE_ALL: '#checkmark-randomselect-collapseall',
+        FIELD_OF_APPLICATION: '[data-region="checkmark-randomselect-fieldofapplication"]',
         FILTER_CRITERIA: '[data-region="checkmark-randomselect-filtercriteria"]',
         CHECKMARK_LIST: '[data-region="checkmark-randomselect-checkmark-list"]',
         CHECKMARK_OPTION: '[data-region="checkmark-randomselect-checkmark-option"]',
         CHECKMARK_SELECTION_ALL: '[data-region="checkmark-randomselect-checkmark-selection-all"]',
         CHECKMARK_SELECTION_SELECTED: '[data-region="checkmark-randomselect-checkmark-selection-selected"]',
+        EXAMPLE_LIST: '[data-region="checkmark-randomselect-example-list"]',
+        EXAMPLE_OPTION: '[data-region="checkmark-randomselect-example-option"]',
+        EXAMPLE_SELECTION_ALL: '[data-region="checkmark-randomselect-example-selection-all"]',
+        EXAMPLE_SELECTION_SELECTED: '[data-region="checkmark-randomselect-example-selection-selected"]',
+        EXAMPLES_PER_STUDENT: '[data-region="checkmark-randomselect-examples-per-student"]',
+        SELECT_ALL_EXAMPLES: '[data-action="select-all-examples"]',
+        SELECT_NO_EXAMPLES: '[data-action="select-no-examples"]',
         SELECT_ALL_CHECKMARKS: '[data-action="select-all-checkmarks"]',
         SELECT_NO_CHECKMARKS: '[data-action="select-no-checkmarks"]',
         SECTION_CONTENT: '[data-region="checkmark-randomselect-section-content"]',
@@ -100,6 +107,75 @@ define(['theme_boost/bootstrap/collapse', 'core/pending'], function(Collapse, Pe
     };
 
     /**
+     * Set all current Checkmark activity example checkboxes.
+     *
+     * @param {HTMLElement[]} checkboxes Example checkboxes.
+     * @param {boolean} checked Checked state.
+     */
+    const setAllExampleOptions = (checkboxes, checked) => {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = checked;
+        });
+    };
+
+    /**
+     * Enable or disable the selected example list.
+     *
+     * @param {HTMLElement|null} list Example list container.
+     * @param {HTMLElement[]} checkboxes Example checkboxes.
+     * @param {boolean} enabled Whether the list should be active.
+     */
+    const setExampleOptionsEnabled = (list, checkboxes, enabled) => {
+        if (list) {
+            list.classList.toggle(CLASSES.TEXT_MUTED, !enabled);
+        }
+
+        checkboxes.forEach(checkbox => {
+            checkbox.disabled = !enabled;
+        });
+    };
+
+    /**
+     * Return the number of checked examples.
+     *
+     * @param {HTMLElement[]} checkboxes Example checkboxes.
+     * @returns {number}
+     */
+    const countSelectedExamples = checkboxes => {
+        return checkboxes.filter(checkbox => checkbox.checked).length;
+    };
+
+    /**
+     * Rebuild the examples per student options for the current example count.
+     *
+     * @param {HTMLSelectElement|null} select Number of examples per student selector.
+     * @param {number} selectedExamples Number of selected examples.
+     */
+    const updateExamplesPerStudent = (select, selectedExamples) => {
+        if (!select) {
+            return;
+        }
+
+        const previousValue = parseInt(select.value, 10) || 1;
+        select.innerHTML = '';
+
+        if (selectedExamples < 1) {
+            select.disabled = true;
+            return;
+        }
+
+        for (let i = 1; i <= selectedExamples; i++) {
+            const option = document.createElement('option');
+            option.value = i.toString();
+            option.textContent = i.toString();
+            select.appendChild(option);
+        }
+
+        select.value = Math.min(previousValue, selectedExamples).toString();
+        select.disabled = false;
+    };
+
+    /**
      * Initialise filter criteria controls.
      *
      * @param {HTMLElement} page Page container.
@@ -164,6 +240,78 @@ define(['theme_boost/bootstrap/collapse', 'core/pending'], function(Collapse, Pe
     };
 
     /**
+     * Initialise field of application controls.
+     *
+     * @param {HTMLElement} page Page container.
+     */
+    const initFieldOfApplication = page => {
+        const fieldOfApplication = page.querySelector(SELECTORS.FIELD_OF_APPLICATION);
+
+        if (!fieldOfApplication) {
+            return;
+        }
+
+        const allSelection = fieldOfApplication.querySelector(SELECTORS.EXAMPLE_SELECTION_ALL);
+        const selectedSelection = fieldOfApplication.querySelector(SELECTORS.EXAMPLE_SELECTION_SELECTED);
+        const exampleList = fieldOfApplication.querySelector(SELECTORS.EXAMPLE_LIST);
+        const checkboxes = [...fieldOfApplication.querySelectorAll(SELECTORS.EXAMPLE_OPTION)];
+        const selectAll = fieldOfApplication.querySelector(SELECTORS.SELECT_ALL_EXAMPLES);
+        const selectNone = fieldOfApplication.querySelector(SELECTORS.SELECT_NO_EXAMPLES);
+        const examplesPerStudent = fieldOfApplication.querySelector(SELECTORS.EXAMPLES_PER_STUDENT);
+        const updateCount = () => updateExamplesPerStudent(examplesPerStudent, countSelectedExamples(checkboxes));
+
+        if (allSelection) {
+            allSelection.addEventListener('change', () => {
+                if (allSelection.checked) {
+                    setAllExampleOptions(checkboxes, true);
+                    setExampleOptionsEnabled(exampleList, checkboxes, false);
+                    updateCount();
+                }
+            });
+        }
+
+        if (selectedSelection) {
+            selectedSelection.addEventListener('change', () => {
+                if (selectedSelection.checked) {
+                    setExampleOptionsEnabled(exampleList, checkboxes, true);
+                    updateCount();
+                }
+            });
+
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    selectedSelection.checked = true;
+                    setExampleOptionsEnabled(exampleList, checkboxes, true);
+                    updateCount();
+                });
+            });
+        }
+
+        if (selectAll && selectedSelection) {
+            selectAll.addEventListener('click', event => {
+                event.preventDefault();
+                selectedSelection.checked = true;
+                setExampleOptionsEnabled(exampleList, checkboxes, true);
+                setAllExampleOptions(checkboxes, true);
+                updateCount();
+            });
+        }
+
+        if (selectNone && selectedSelection) {
+            selectNone.addEventListener('click', event => {
+                event.preventDefault();
+                selectedSelection.checked = true;
+                setExampleOptionsEnabled(exampleList, checkboxes, true);
+                setAllExampleOptions(checkboxes, false);
+                updateCount();
+            });
+        }
+
+        setExampleOptionsEnabled(exampleList, checkboxes, selectedSelection && selectedSelection.checked);
+        updateCount();
+    };
+
+    /**
      * Initialise the random selection layout.
      *
      * @param {string} selector Page container selector.
@@ -206,7 +354,11 @@ define(['theme_boost/bootstrap/collapse', 'core/pending'], function(Collapse, Pe
                 const shouldExpand = collapseAll.classList.contains(CLASSES.COLLAPSED);
                 contents.forEach(content => {
                     const collapse = BootstrapCollapse.getInstance(content) || new BootstrapCollapse(content, {toggle: false});
-                    shouldExpand ? collapse.show() : collapse.hide();
+                    if (shouldExpand) {
+                        collapse.show();
+                    } else {
+                        collapse.hide();
+                    }
                 });
             });
 
@@ -221,6 +373,7 @@ define(['theme_boost/bootstrap/collapse', 'core/pending'], function(Collapse, Pe
         }
 
         initFilterCriteria(page);
+        initFieldOfApplication(page);
 
         pendingPromise.resolve();
     };

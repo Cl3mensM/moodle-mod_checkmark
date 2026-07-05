@@ -24,6 +24,7 @@
 
 namespace checkmark_randomselect\output;
 
+use checkmark_randomselect\application;
 use checkmark_randomselect\filter;
 use moodle_url;
 use renderable;
@@ -43,12 +44,15 @@ final class page implements renderable, templatable {
      *
      * @param moodle_url $cancelurl URL used by the cancel button.
      * @param filter $filter Filter criteria data.
+     * @param application $application Field of application data.
      */
     public function __construct(
         /** @var moodle_url URL used by the cancel button. */
         private readonly moodle_url $cancelurl,
         /** @var filter Filter criteria data. */
         private readonly filter $filter,
+        /** @var application Field of application data. */
+        private readonly application $application,
     ) {
     }
 
@@ -71,7 +75,8 @@ final class page implements renderable, templatable {
                 $this->get_collapsible_section(
                     'fieldofapplication',
                     get_string('fieldofapplication', 'checkmark_randomselect'),
-                    $output
+                    $output,
+                    ['fieldofapplication' => $this->application->export_for_template($output)]
                 ),
             ],
             'previewtitle' => get_string('preview', 'checkmark_randomselect'),

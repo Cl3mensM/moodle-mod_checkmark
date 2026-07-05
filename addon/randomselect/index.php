@@ -65,6 +65,7 @@ echo html_writer::link($backurl, get_string('back'), [
 echo html_writer::end_div();
 $renderer = $PAGE->get_renderer('core');
 $filter = \checkmark_randomselect\filter::default_for_course((int) $course->id);
-$page = new \checkmark_randomselect\output\page($backurl, $filter);
+$application = \checkmark_randomselect\application::default_for_checkmark($checkmark);
+$page = new \checkmark_randomselect\output\page($backurl, $filter, $application);
 echo $OUTPUT->render_from_template('checkmark_randomselect/page', $page->export_for_template($renderer));
 echo $OUTPUT->footer();

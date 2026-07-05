@@ -22,6 +22,7 @@
     Context variables required for this template:
     * pageintro - Introductory info text.
     * sections - Collapsible section definitions.
+      Each section may contain filtercriteria or fieldofapplication data.
     * previewtitle - Preview section title.
     * previewhelpicon - Rendered help icon for the preview section.
     * applybuttonlabel - Label for the apply button.
@@ -34,7 +35,12 @@
         "pageintro": "Here, you can randomly select participants for a presentation.",
         "sections": [
             {"id": "checkmark-randomselect-filtercriteria", "title": "Filter criteria", "helpicon": ""},
-            {"id": "checkmark-randomselect-fieldofapplication", "title": "Field of application", "helpicon": ""}
+            {
+                "id": "checkmark-randomselect-fieldofapplication",
+                "title": "Field of application",
+                "helpicon": "",
+                "fieldofapplication": {}
+            }
         ],
         "previewtitle": "Preview",
         "previewhelpicon": "",
@@ -86,6 +92,9 @@
                     {{#filtercriteria}}
                         {{> checkmark_randomselect/filtercriteria }}
                     {{/filtercriteria}}
+                    {{#fieldofapplication}}
+                        {{> checkmark_randomselect/fieldofapplication }}
+                    {{/fieldofapplication}}
                 </div>
             </section>
         {{/sections}}

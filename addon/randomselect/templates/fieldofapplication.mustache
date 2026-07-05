@@ -1,0 +1,137 @@
+{{!
+    This file is part of mod_checkmark for Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template checkmark_randomselect/fieldofapplication
+
+    Field of application controls for the Checkmark random selection page.
+
+    Context variables required for this template:
+    * exampleslabel - Label for the example selector.
+    * exampleshelpicon - Rendered help icon for the example selector.
+    * exampleselectionname - Name for the example selection mode radios.
+    * exampleselectionall - Value for selecting all examples.
+    * exampleselectionallid - Id for the all examples radio.
+    * exampleselectionselected - Value for selecting specific examples.
+    * exampleselectionselectedid - Id for the selected examples radio.
+    * alllabel - Label for All controls.
+    * selectedlabel - Label for the Selected radio.
+    * nonelabel - Label for the None action.
+    * exampleoptions - Current Checkmark activity example options.
+    * hasexampleoptions - Whether examples are available.
+    * nooptionsmessage - Message shown when no examples are available.
+    * examplesperstudentlabel - Label for the examples per student selector.
+    * examplesperstudenthelpicon - Rendered help icon for the examples per student selector.
+    * examplesperstudentname - Name for the examples per student selector.
+    * examplesperstudentoptions - Options for the examples per student selector.
+
+    Example context (json):
+    {
+        "exampleslabel": "Examples from this checkmark activity",
+        "exampleshelpicon": "",
+        "exampleselectionname": "exampleselection",
+        "exampleselectionall": "all",
+        "exampleselectionallid": "checkmark-randomselect-example-selection-all",
+        "exampleselectionselected": "selected",
+        "exampleselectionselectedid": "checkmark-randomselect-example-selection-selected",
+        "alllabel": "All",
+        "selectedlabel": "Selected",
+        "nonelabel": "None",
+        "exampleoptions": [
+            {
+                "id": 42,
+                "label": "Example 1 (10 points)",
+                "inputid": "checkmark-randomselect-example-42",
+                "checked": true
+            }
+        ],
+        "hasexampleoptions": true,
+        "nooptionsmessage": "No examples are available in this Checkmark activity.",
+        "examplesperstudentlabel": "Number of examples per student",
+        "examplesperstudenthelpicon": "",
+        "examplesperstudentname": "examplesperstudent",
+        "examplesperstudentoptions": [
+            {"value": 1, "label": 1, "selected": true}
+        ]
+    }
+}}
+<div data-region="checkmark-randomselect-fieldofapplication">
+    <div class="form-group row mb-4">
+        <div class="col-md-4">
+            <div>
+                <label class="mb-0 mr-1 d-inline">{{exampleslabel}}</label>
+                <span>{{{exampleshelpicon}}}</span>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="{{exampleselectionname}}"
+                       id="{{exampleselectionallid}}" value="{{exampleselectionall}}" checked
+                       data-region="checkmark-randomselect-example-selection-all">
+                <label class="form-check-label" for="{{exampleselectionallid}}">{{alllabel}}</label>
+            </div>
+            <div class="form-check mt-2">
+                <input class="form-check-input" type="radio" name="{{exampleselectionname}}"
+                       id="{{exampleselectionselectedid}}" value="{{exampleselectionselected}}"
+                       data-region="checkmark-randomselect-example-selection-selected">
+                <label class="form-check-label" for="{{exampleselectionselectedid}}">{{selectedlabel}}</label>
+            </div>
+            <div class="ml-4 mt-1" data-region="checkmark-randomselect-example-options">
+                <div class="mb-1">
+                    <a href="#" data-action="select-all-examples">{{alllabel}}</a>
+                    <span aria-hidden="true"> / </span>
+                    <a href="#" data-action="select-no-examples">{{nonelabel}}</a>
+                </div>
+                <div class="form-control overflow-auto text-muted" style="height: 7rem;"
+                     data-region="checkmark-randomselect-example-list">
+                    {{#hasexampleoptions}}
+                        {{#exampleoptions}}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="exampleids[]"
+                                       id="{{inputid}}" value="{{id}}" {{#checked}}checked{{/checked}}
+                                       disabled data-region="checkmark-randomselect-example-option">
+                                <label class="form-check-label" for="{{inputid}}">{{label}}</label>
+                            </div>
+                        {{/exampleoptions}}
+                    {{/hasexampleoptions}}
+                    {{^hasexampleoptions}}
+                        <span class="text-muted">{{nooptionsmessage}}</span>
+                    {{/hasexampleoptions}}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group row mb-0">
+        <div class="col-md-4">
+            <div>
+                <label class="mb-0 mr-1 d-inline" for="checkmark-randomselect-examples-per-student">
+                    {{examplesperstudentlabel}}
+                </label>
+                <span>{{{examplesperstudenthelpicon}}}</span>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <select class="form-select w-auto" id="checkmark-randomselect-examples-per-student"
+                    name="{{examplesperstudentname}}" data-region="checkmark-randomselect-examples-per-student"
+                    {{^hasexampleoptions}}disabled{{/hasexampleoptions}}>
+                {{#examplesperstudentoptions}}
+                    <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+                {{/examplesperstudentoptions}}
+            </select>
+        </div>
+    </div>
+</div>
