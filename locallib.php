@@ -1249,6 +1249,7 @@ class checkmark {
         $context = context_module::instance($this->cm->id);
         $submitted .= \checkmark_randomselect\access::render_start_button(
             $context,
+            $this->checkmark,
             $this->cm->id,
             new moodle_url('/mod/checkmark/view.php', ['id' => $this->cm->id]),
             ['class' => 'btn btn-secondary mr-1 ml-0']
@@ -3246,6 +3247,7 @@ class checkmark {
         ]);
         echo \checkmark_randomselect\access::render_start_button(
             $this->context,
+            $this->checkmark,
             $this->cm->id,
             new moodle_url('/mod/checkmark/submissions.php', ['id' => $this->cm->id]),
             ['class' => 'btn btn-secondary float-right mr-1']

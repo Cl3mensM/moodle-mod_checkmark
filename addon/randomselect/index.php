@@ -40,7 +40,7 @@ if ($returnurl !== '') {
 [$cm, $checkmark, $course] = \checkmark::init_checks($id, $c, $url);
 $context = context_module::instance($cm->id);
 
-\checkmark_randomselect\access::require_can_use($context);
+\checkmark_randomselect\access::require_can_use($context, $checkmark);
 
 $PAGE->set_title(format_string($checkmark->name, true));
 $PAGE->set_heading($course->fullname);

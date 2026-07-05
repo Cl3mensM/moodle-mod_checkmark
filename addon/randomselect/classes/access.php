@@ -56,24 +56,38 @@ final class access {
      * Return whether the current user can use the random selection add-on.
      *
      * @param context_module $context The checkmark module context.
+     * @param object $checkmark Checkmark activity record.
      * @return bool
      */
-    public static function can_use(context_module $context): bool {
-        return self::is_enabled() && has_capability(self::CAPABILITY, $context);
+    public static function can_use(context_module $context, object $checkmark): bool {
+        return self::is_enabled()
+            && self::uses_presentation_grading($checkmark)
+            && has_capability(self::CAPABILITY, $context);
     }
 
     /**
      * Require access to the random selection add-on.
      *
      * @param context_module $context The checkmark module context.
+     * @param object $checkmark Checkmark activity record.
      * @throws moodle_exception
      */
-    public static function require_can_use(context_module $context): void {
-        if (!self::is_enabled()) {
+    public static function require_can_use(context_module $context, object $checkmark): void {
+        if (!self::is_enabled() || !self::uses_presentation_grading($checkmark)) {
             throw new moodle_exception('randomselectnotavailable', 'checkmark_randomselect');
         }
 
         require_capability(self::CAPABILITY, $context);
+    }
+
+    /**
+     * Return whether the Checkmark activity uses presentation grading.
+     *
+     * @param object $checkmark Checkmark activity record.
+     * @return bool
+     */
+    private static function uses_presentation_grading(object $checkmark): bool {
+        return !empty($checkmark->presentationgrading);
     }
 
     /**
@@ -96,6 +110,7 @@ final class access {
      * Render the random selection start button when the current user has access.
      *
      * @param context_module $context The checkmark module context.
+     * @param object $checkmark Checkmark activity record.
      * @param int $cmid Course module id.
      * @param moodle_url $returnurl Return URL for the back button.
      * @param array $attributes Additional HTML attributes.
@@ -103,11 +118,12 @@ final class access {
      */
     public static function render_start_button(
         context_module $context,
+        object $checkmark,
         int $cmid,
         moodle_url $returnurl,
         array $attributes = []
     ): string {
-        if (!self::can_use($context)) {
+        if (!self::can_use($context, $checkmark)) {
             return '';
         }
 

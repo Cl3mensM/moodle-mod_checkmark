@@ -18,11 +18,11 @@ Feature: Configure Checkmark random selection filters
       | user     | course | role           |
       | teacher1 | C1     | editingteacher |
     And the following "activities" exist:
-      | activity  | course | idnumber | name                   | visible |
-      | checkmark | C1     | CMMAIN   | Zulu Checkmark         | 1       |
-      | checkmark | C1     | CMALPHA  | Alpha Checkmark        | 1       |
-      | checkmark | C1     | CMHIDDEN | Hidden Checkmark       | 0       |
-      | checkmark | C2     | CMOTHER  | Other Course Checkmark | 1       |
+      | activity  | course | idnumber | name                   | visible | presentationgrading | presentationgrade |
+      | checkmark | C1     | CMMAIN   | Zulu Checkmark         | 1       | 1                   | 100               |
+      | checkmark | C1     | CMALPHA  | Alpha Checkmark        | 1       | 0                   | 0                 |
+      | checkmark | C1     | CMHIDDEN | Hidden Checkmark       | 0       | 0                   | 0                 |
+      | checkmark | C2     | CMOTHER  | Other Course Checkmark | 1       | 0                   | 0                 |
     When I am on the "CMMAIN" Activity page logged in as teacher1
     And I follow "Start random selection for presentation"
     And I click on "//button[@aria-controls='checkmark-randomselect-filtercriteria']" "xpath_element"
@@ -45,3 +45,19 @@ Feature: Configure Checkmark random selection filters
     When I click on "All" "link" in the "#checkmark-randomselect-filtercriteria" "css_element"
     Then the field "Alpha Checkmark" matches value "1"
     And the field "Zulu Checkmark" matches value "1"
+
+  Scenario: Teacher cannot start random presentation selection without presentation grading
+    Given the following "courses" exist:
+      | fullname | shortname | category |
+      | Course 1 | C1        | 0        |
+    And the following "users" exist:
+      | username | firstname | lastname | email                |
+      | teacher1 | Teacher   | 1        | teacher1@example.com |
+    And the following "course enrolments" exist:
+      | user     | course | role           |
+      | teacher1 | C1     | editingteacher |
+    And the following "activities" exist:
+      | activity  | course | idnumber | name                  | presentationgrading |
+      | checkmark | C1     | CMNOPRES | Checkmark without pres | 0                   |
+    When I am on the "CMNOPRES" Activity page logged in as teacher1
+    Then I should not see "Start random selection for presentation"

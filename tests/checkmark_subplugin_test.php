@@ -141,7 +141,7 @@ final class checkmark_subplugin_test extends \advanced_testcase {
     }
 
     /**
-     * Random selection access depends on add-on state and the use capability.
+     * Random selection access depends on add-on state, presentation grading, and the use capability.
      */
     public function test_randomselect_access_checks_enabled_state_and_capability(): void {
         $this->resetAfterTest(true);
@@ -152,21 +152,29 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         $student = $generator->create_user();
         $generator->enrol_user($teacher->id, $course->id, 'teacher');
         $generator->enrol_user($student->id, $course->id, 'student');
-        $checkmark = $generator->create_module('checkmark', ['course' => $course->id]);
+        $checkmark = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+        ]);
         $context = \context_module::instance($checkmark->cmid);
 
         set_config('disabled', 0, 'checkmark_randomselect');
 
         $this->setUser($teacher);
-        $this->assertTrue(\checkmark_randomselect\access::can_use($context));
+        $this->assertTrue(\checkmark_randomselect\access::can_use($context, $checkmark));
+
+        $checkmarkwithoutpresentation = clone $checkmark;
+        $checkmarkwithoutpresentation->presentationgrading = 0;
+        $this->assertFalse(\checkmark_randomselect\access::can_use($context, $checkmarkwithoutpresentation));
 
         $this->setUser($student);
-        $this->assertFalse(\checkmark_randomselect\access::can_use($context));
+        $this->assertFalse(\checkmark_randomselect\access::can_use($context, $checkmark));
 
         set_config('disabled', 1, 'checkmark_randomselect');
 
         $this->setUser($teacher);
-        $this->assertFalse(\checkmark_randomselect\access::can_use($context));
+        $this->assertFalse(\checkmark_randomselect\access::can_use($context, $checkmark));
     }
 
     /**
@@ -179,7 +187,11 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         $course = $generator->create_course();
         $teacher = $generator->create_user();
         $generator->enrol_user($teacher->id, $course->id, 'teacher');
-        $checkmark = $generator->create_module('checkmark', ['course' => $course->id]);
+        $checkmark = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+        ]);
         $context = \context_module::instance($checkmark->cmid);
 
         set_config('disabled', 0, 'checkmark_randomselect');
@@ -187,6 +199,7 @@ final class checkmark_subplugin_test extends \advanced_testcase {
 
         $button = \checkmark_randomselect\access::render_start_button(
             $context,
+            $checkmark,
             $checkmark->cmid,
             new \moodle_url('/mod/checkmark/view.php', ['id' => $checkmark->cmid])
         );
@@ -203,6 +216,19 @@ final class checkmark_subplugin_test extends \advanced_testcase {
             '',
             \checkmark_randomselect\access::render_start_button(
                 $context,
+                $checkmark,
+                $checkmark->cmid,
+                new \moodle_url('/mod/checkmark/view.php', ['id' => $checkmark->cmid])
+            )
+        );
+
+        set_config('disabled', 0, 'checkmark_randomselect');
+        $checkmark->presentationgrading = 0;
+        $this->assertSame(
+            '',
+            \checkmark_randomselect\access::render_start_button(
+                $context,
+                $checkmark,
                 $checkmark->cmid,
                 new \moodle_url('/mod/checkmark/view.php', ['id' => $checkmark->cmid])
             )
@@ -219,7 +245,11 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         $course = $generator->create_course();
         $teacher = $generator->create_user();
         $generator->enrol_user($teacher->id, $course->id, 'teacher');
-        $checkmarkrecord = $generator->create_module('checkmark', ['course' => $course->id]);
+        $checkmarkrecord = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+        ]);
         $checkmark = new \checkmark($checkmarkrecord->cmid);
 
         set_config('disabled', 0, 'checkmark_randomselect');
@@ -238,6 +268,18 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         );
 
         set_config('disabled', 1, 'checkmark_randomselect');
+        $this->assertStringNotContainsString(
+            get_string('startpresentationrandomselection', 'checkmark_randomselect'),
+            $checkmark->buttongroup((object)['submissionssubmittedcount' => 0])
+        );
+
+        $checkmarkwithoutpresentation = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 0,
+        ]);
+        $checkmark = new \checkmark($checkmarkwithoutpresentation->cmid);
+
+        set_config('disabled', 0, 'checkmark_randomselect');
         $this->assertStringNotContainsString(
             get_string('startpresentationrandomselection', 'checkmark_randomselect'),
             $checkmark->buttongroup((object)['submissionssubmittedcount' => 0])
