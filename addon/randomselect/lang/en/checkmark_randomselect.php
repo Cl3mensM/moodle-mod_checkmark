@@ -23,6 +23,8 @@
  */
 
 $string['applyrandomselection'] = 'Apply random selection';
+$string['coursecheckmarks'] = 'Checkmark activities from this course';
+$string['coursecheckmarks_help'] = 'Select the checkmark activities to be used as the data basis for the random selection.';
 $string['createnewpreview'] = 'Create new preview';
 $string['fieldofapplication'] = 'Field of application';
 $string['fieldofapplication_help'] = 'Here you can specify which examples from the current checkmark activity you wish to assign to how many participants.';
@@ -30,6 +32,8 @@ $string['filtercriteria'] = 'Filter criteria';
 $string['filtercriteria_help'] = 'Using the filter criteria, you can specify the data on which you wish to base your random selection: which checkmark activities from the current course, and whether students with existing presentation should be included.';
 $string['includeexistingpresentations'] = 'Include participants with existing presentation';
 $string['includeexistingpresentations_desc'] = 'Defines the default setting for whether existing presentations are included for the selected checkmark activities. If set to No, participants with existing presentations will not be considered in the current random selection, and only those without presentations will be potentially selected.';
+$string['includeexistingpresentations_help'] = 'You can include or exclude existing presentations for the selected cross-tabulation exercises. If you select No, participants with existing presentations will not be considered in the current random selection, and only those without presentations will be potentially selected.';
+$string['novisiblecheckmarks'] = 'No visible Checkmark activities are available.';
 $string['pageintro'] = 'Here, you can randomly select participants for a presentation.<br>By default, all checkmark activities and students are included in the allocation. Optionally, you can filter by data of available checkmark activities and specify how to random select students for examples.';
 $string['pluginname'] = 'Random selection';
 $string['preview'] = 'Preview';

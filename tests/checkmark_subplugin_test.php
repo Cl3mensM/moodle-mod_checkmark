@@ -42,6 +42,7 @@ require_once($CFG->dirroot . '/mod/checkmark/locallib.php');
 #[\PHPUnit\Framework\Attributes\CoversClass(\mod_checkmark\plugininfo\checkmark::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_plugin_manager::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_randomselect\access::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_randomselect\filter::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_randomselect\output\page::class)]
 final class checkmark_subplugin_test extends \advanced_testcase {
     /**
@@ -69,7 +70,9 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         $this->assertFileExists($plugins['randomselect'] . '/settings.php');
         $this->assertFileExists($plugins['randomselect'] . '/db/access.php');
         $this->assertFileExists($plugins['randomselect'] . '/index.php');
+        $this->assertFileExists($plugins['randomselect'] . '/classes/filter.php');
         $this->assertFileExists($plugins['randomselect'] . '/templates/page.mustache');
+        $this->assertFileExists($plugins['randomselect'] . '/templates/filtercriteria.mustache');
         $this->assertFileExists($plugins['randomselect'] . '/amd/src/randomselect_layout.js');
         $this->assertFileExists($plugins['randomselect'] . '/amd/build/randomselect_layout.min.js');
     }
@@ -242,13 +245,81 @@ final class checkmark_subplugin_test extends \advanced_testcase {
     }
 
     /**
+     * Random selection filter criteria export visible course Checkmark activities.
+     */
+    public function test_randomselect_filter_criteria_exports_visible_course_checkmarks(): void {
+        global $PAGE;
+
+        $this->resetAfterTest(true);
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $othercourse = $generator->create_course();
+        $teacher = $generator->create_user();
+        $generator->enrol_user($teacher->id, $course->id, 'editingteacher');
+
+        $zulu = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'name' => 'Zulu Checkmark',
+        ]);
+        $alpha = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'name' => 'Alpha Checkmark',
+        ]);
+        $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'name' => 'Hidden Checkmark',
+            'visible' => 0,
+        ]);
+        $generator->create_module('checkmark', [
+            'course' => $othercourse->id,
+            'name' => 'Other Course Checkmark',
+        ]);
+
+        set_config(
+            \checkmark_randomselect\settings::INCLUDE_EXISTING_PRESENTATIONS,
+            1,
+            'checkmark_randomselect'
+        );
+        $this->setUser($teacher);
+
+        $filter = \checkmark_randomselect\filter::default_for_course((int) $course->id);
+        $options = $filter->get_checkmark_options();
+
+        $this->assertSame(['Alpha Checkmark', 'Zulu Checkmark'], array_column($options, 'name'));
+        $this->assertSame([(int) $alpha->id, (int) $zulu->id], array_column($options, 'id'));
+        $this->assertTrue($options[0]['checked']);
+        $this->assertTrue($options[1]['checked']);
+
+        $data = $filter->export_for_template($PAGE->get_renderer('core'));
+
+        $this->assertSame(get_string('coursecheckmarks', 'checkmark_randomselect'), $data['coursecheckmarkslabel']);
+        $this->assertNotEmpty($data['coursecheckmarkshelpicon']);
+        $this->assertSame(\checkmark_randomselect\filter::CHECKMARK_SELECTION_ALL, $data['checkmarkselectionall']);
+        $this->assertSame(
+            \checkmark_randomselect\filter::CHECKMARK_SELECTION_SELECTED,
+            $data['checkmarkselectionselected']
+        );
+        $this->assertSame(
+            get_string('includeexistingpresentations', 'checkmark_randomselect'),
+            $data['includeexistingpresentationslabel']
+        );
+        $this->assertNotEmpty($data['includeexistingpresentationshelpicon']);
+        $this->assertSame(1, $data['includeexistingpresentationsoptions'][0]['value']);
+        $this->assertTrue($data['includeexistingpresentationsoptions'][0]['selected']);
+        $this->assertSame(0, $data['includeexistingpresentationsoptions'][1]['value']);
+        $this->assertFalse($data['includeexistingpresentationsoptions'][1]['selected']);
+    }
+
+    /**
      * Random selection page exports the ticket #8752 layout data.
      */
     public function test_randomselect_page_layout_is_exported(): void {
         global $PAGE;
 
         $page = new \checkmark_randomselect\output\page(
-            new \moodle_url('/mod/checkmark/view.php', ['id' => 23])
+            new \moodle_url('/mod/checkmark/view.php', ['id' => 23]),
+            new \checkmark_randomselect\filter(SITEID, false)
         );
 
         $data = $page->export_for_template($PAGE->get_renderer('core'));
@@ -261,6 +332,10 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         $this->assertSame('checkmark-randomselect-filtercriteria', $data['sections'][0]['id']);
         $this->assertSame(get_string('filtercriteria', 'checkmark_randomselect'), $data['sections'][0]['title']);
         $this->assertNotEmpty($data['sections'][0]['helpicon']);
+        $this->assertSame(
+            get_string('coursecheckmarks', 'checkmark_randomselect'),
+            $data['sections'][0]['filtercriteria']['coursecheckmarkslabel']
+        );
         $this->assertSame('checkmark-randomselect-fieldofapplication', $data['sections'][1]['id']);
         $this->assertSame(get_string('fieldofapplication', 'checkmark_randomselect'), $data['sections'][1]['title']);
         $this->assertNotEmpty($data['sections'][1]['helpicon']);

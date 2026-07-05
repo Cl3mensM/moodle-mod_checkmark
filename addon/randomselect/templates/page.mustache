@@ -82,7 +82,11 @@
                     <span class="ml-1">{{{helpicon}}}</span>
                 </div>
                 <div id="{{id}}" class="collapse mt-3 ml-5"
-                     data-region="checkmark-randomselect-section-content"></div>
+                     data-region="checkmark-randomselect-section-content">
+                    {{#filtercriteria}}
+                        {{> checkmark_randomselect/filtercriteria }}
+                    {{/filtercriteria}}
+                </div>
             </section>
         {{/sections}}
     </div>

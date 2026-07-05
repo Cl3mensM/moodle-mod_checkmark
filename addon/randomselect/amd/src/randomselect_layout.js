@@ -26,6 +26,13 @@ define(['theme_boost/bootstrap/collapse', 'core/pending'], function(Collapse, Pe
 
     const SELECTORS = {
         COLLAPSE_ALL: '#checkmark-randomselect-collapseall',
+        FILTER_CRITERIA: '[data-region="checkmark-randomselect-filtercriteria"]',
+        CHECKMARK_LIST: '[data-region="checkmark-randomselect-checkmark-list"]',
+        CHECKMARK_OPTION: '[data-region="checkmark-randomselect-checkmark-option"]',
+        CHECKMARK_SELECTION_ALL: '[data-region="checkmark-randomselect-checkmark-selection-all"]',
+        CHECKMARK_SELECTION_SELECTED: '[data-region="checkmark-randomselect-checkmark-selection-selected"]',
+        SELECT_ALL_CHECKMARKS: '[data-action="select-all-checkmarks"]',
+        SELECT_NO_CHECKMARKS: '[data-action="select-no-checkmarks"]',
         SECTION_CONTENT: '[data-region="checkmark-randomselect-section-content"]',
         SECTION_TOGGLE: '[data-region="checkmark-randomselect-section-toggle"]',
     };
@@ -33,6 +40,7 @@ define(['theme_boost/bootstrap/collapse', 'core/pending'], function(Collapse, Pe
     const CLASSES = {
         COLLAPSED: 'collapsed',
         SHOW: 'show',
+        TEXT_MUTED: 'text-muted',
     };
 
     /**
@@ -60,6 +68,99 @@ define(['theme_boost/bootstrap/collapse', 'core/pending'], function(Collapse, Pe
         collapseAll.classList.toggle(CLASSES.COLLAPSED, !allExpanded);
         collapseAll.setAttribute('aria-expanded', allExpanded ? 'true' : 'false');
         collapseAll.setAttribute('aria-controls', contents.map(content => content.id).join(' '));
+    };
+
+    /**
+     * Set all visible Checkmark activity checkboxes.
+     *
+     * @param {HTMLElement[]} checkboxes Checkmark activity checkboxes.
+     * @param {boolean} checked Checked state.
+     */
+    const setAllCheckmarkOptions = (checkboxes, checked) => {
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = checked;
+        });
+    };
+
+    /**
+     * Enable or disable the selected Checkmark activity list.
+     *
+     * @param {HTMLElement|null} list Checkmark activity list container.
+     * @param {HTMLElement[]} checkboxes Checkmark activity checkboxes.
+     * @param {boolean} enabled Whether the list should be active.
+     */
+    const setCheckmarkOptionsEnabled = (list, checkboxes, enabled) => {
+        if (list) {
+            list.classList.toggle(CLASSES.TEXT_MUTED, !enabled);
+        }
+
+        checkboxes.forEach(checkbox => {
+            checkbox.disabled = !enabled;
+        });
+    };
+
+    /**
+     * Initialise filter criteria controls.
+     *
+     * @param {HTMLElement} page Page container.
+     */
+    const initFilterCriteria = page => {
+        const filterCriteria = page.querySelector(SELECTORS.FILTER_CRITERIA);
+
+        if (!filterCriteria) {
+            return;
+        }
+
+        const allSelection = filterCriteria.querySelector(SELECTORS.CHECKMARK_SELECTION_ALL);
+        const selectedSelection = filterCriteria.querySelector(SELECTORS.CHECKMARK_SELECTION_SELECTED);
+        const checkmarkList = filterCriteria.querySelector(SELECTORS.CHECKMARK_LIST);
+        const checkboxes = [...filterCriteria.querySelectorAll(SELECTORS.CHECKMARK_OPTION)];
+        const selectAll = filterCriteria.querySelector(SELECTORS.SELECT_ALL_CHECKMARKS);
+        const selectNone = filterCriteria.querySelector(SELECTORS.SELECT_NO_CHECKMARKS);
+
+        if (allSelection) {
+            allSelection.addEventListener('change', () => {
+                if (allSelection.checked) {
+                    setAllCheckmarkOptions(checkboxes, true);
+                    setCheckmarkOptionsEnabled(checkmarkList, checkboxes, false);
+                }
+            });
+        }
+
+        if (selectedSelection) {
+            selectedSelection.addEventListener('change', () => {
+                if (selectedSelection.checked) {
+                    setCheckmarkOptionsEnabled(checkmarkList, checkboxes, true);
+                }
+            });
+
+            checkboxes.forEach(checkbox => {
+                checkbox.addEventListener('change', () => {
+                    selectedSelection.checked = true;
+                    setCheckmarkOptionsEnabled(checkmarkList, checkboxes, true);
+                });
+            });
+        }
+
+        if (selectAll && selectedSelection) {
+            selectAll.addEventListener('click', event => {
+                event.preventDefault();
+                selectedSelection.checked = true;
+                setCheckmarkOptionsEnabled(checkmarkList, checkboxes, true);
+                setAllCheckmarkOptions(checkboxes, true);
+            });
+        }
+
+        if (selectNone && selectedSelection) {
+            selectNone.addEventListener('click', event => {
+                event.preventDefault();
+                selectedSelection.checked = true;
+                setCheckmarkOptionsEnabled(checkmarkList, checkboxes, true);
+                setAllCheckmarkOptions(checkboxes, false);
+            });
+        }
+
+        setCheckmarkOptionsEnabled(checkmarkList, checkboxes, selectedSelection && selectedSelection.checked);
     };
 
     /**
@@ -118,6 +219,8 @@ define(['theme_boost/bootstrap/collapse', 'core/pending'], function(Collapse, Pe
 
             updateCollapseAll(collapseAll, contents);
         }
+
+        initFilterCriteria(page);
 
         pendingPromise.resolve();
     };
