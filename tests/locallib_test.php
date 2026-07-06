@@ -251,7 +251,7 @@ final class locallib_test extends \advanced_testcase {
         $checkmarkrecord = $generator->create_module('checkmark', [
             'course' => $course->id,
             'presentationgrading' => 1,
-            'presentationgrade' => 0,
+            'presentationgrade' => 100,
             'presentationgradebook' => 0,
         ]);
         $checkmark = new \checkmark($checkmarkrecord->cmid);
@@ -286,6 +286,116 @@ final class locallib_test extends \advanced_testcase {
         ], '*', MUST_EXIST);
 
         $this->assertEquals(CHECKMARK_PRESENTATION_STATUS_MARKED, $feedback->presentationstatus);
+    }
+
+    /**
+     * Ensure regular grade changes do not turn a marked presentation into done.
+     */
+    public function test_process_feedback_keeps_marked_status_when_only_regular_grade_changes(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $student = $generator->create_user();
+        $generator->enrol_user($student->id, $course->id, 'student');
+        $checkmarkrecord = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+            'presentationgradebook' => 0,
+        ]);
+        $checkmark = new \checkmark($checkmarkrecord->cmid);
+        $presentationfeedback = 'Random selected: Example 1';
+        $feedback = $checkmark->prepare_new_feedback($student->id);
+        $feedback->presentationstatus = CHECKMARK_PRESENTATION_STATUS_MARKED;
+        $feedback->presentationfeedback = $presentationfeedback;
+        $feedback->presentationformat = FORMAT_HTML;
+        $DB->update_record('checkmark_feedbacks', $feedback);
+
+        $oldpost = $_POST;
+        $oldget = $_GET;
+        $_GET = [];
+
+        try {
+            $this->submit_feedback_form(
+                $checkmark,
+                $student->id,
+                -1,
+                $presentationfeedback,
+                20,
+                CHECKMARK_PRESENTATION_STATUS_MARKED
+            );
+        } finally {
+            $_POST = $oldpost;
+            $_GET = $oldget;
+        }
+
+        $feedback = $DB->get_record('checkmark_feedbacks', [
+            'checkmarkid' => $checkmarkrecord->id,
+            'userid' => $student->id,
+        ], '*', MUST_EXIST);
+
+        $this->assertEquals(CHECKMARK_PRESENTATION_STATUS_MARKED, $feedback->presentationstatus);
+        $this->assertEquals(20, $feedback->grade);
+        $this->assertSame($presentationfeedback, $feedback->presentationfeedback);
+    }
+
+    /**
+     * Ensure explicit No is not overwritten by unchanged presentation feedback.
+     */
+    public function test_process_feedback_keeps_no_status_with_unchanged_presentation_feedback(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $student = $generator->create_user();
+        $generator->enrol_user($student->id, $course->id, 'student');
+        $checkmarkrecord = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+            'presentationgradebook' => 0,
+        ]);
+        $checkmark = new \checkmark($checkmarkrecord->cmid);
+        $presentationfeedback = 'Random selected: Example 1';
+        $feedback = $checkmark->prepare_new_feedback($student->id);
+        $feedback->presentationstatus = CHECKMARK_PRESENTATION_STATUS_YES;
+        $feedback->presentationfeedback = $presentationfeedback;
+        $feedback->presentationformat = FORMAT_HTML;
+        $DB->update_record('checkmark_feedbacks', $feedback);
+
+        $oldpost = $_POST;
+        $oldget = $_GET;
+        $_GET = [];
+
+        try {
+            $this->submit_feedback_form(
+                $checkmark,
+                $student->id,
+                -1,
+                $presentationfeedback,
+                -1,
+                CHECKMARK_PRESENTATION_STATUS_NO
+            );
+        } finally {
+            $_POST = $oldpost;
+            $_GET = $oldget;
+        }
+
+        $feedback = $DB->get_record('checkmark_feedbacks', [
+            'checkmarkid' => $checkmarkrecord->id,
+            'userid' => $student->id,
+        ], '*', MUST_EXIST);
+
+        $this->assertEquals(CHECKMARK_PRESENTATION_STATUS_NO, $feedback->presentationstatus);
+        $this->assertNull($feedback->presentationgrade);
+        $this->assertSame($presentationfeedback, $feedback->presentationfeedback);
     }
 
     /**
@@ -542,6 +652,147 @@ final class locallib_test extends \advanced_testcase {
 
         $this->assertEquals(CHECKMARK_PRESENTATION_STATUS_YES, $feedback->presentationstatus);
         $this->assertEquals(50, $feedback->presentationgrade);
+    }
+
+    /**
+     * Ensure quick grade regular grade changes do not turn a marked presentation into done.
+     */
+    public function test_fastgrade_keeps_marked_status_when_only_regular_grade_changes(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $student = $generator->create_user();
+        $generator->enrol_user($student->id, $course->id, 'student');
+        $checkmarkrecord = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+            'presentationgradebook' => 0,
+            'grade' => 100,
+        ]);
+        $instance = new testable_checkmark($checkmarkrecord->cmid);
+        $presentationfeedback = 'Random selected: Example 1';
+        $feedback = $instance->prepare_new_feedback($student->id);
+        $feedback->presentationstatus = CHECKMARK_PRESENTATION_STATUS_MARKED;
+        $feedback->presentationfeedback = $presentationfeedback;
+        $feedback->presentationformat = FORMAT_HTML;
+        $DB->update_record('checkmark_feedbacks', $feedback);
+
+        $oldpost = $_POST;
+        $oldget = $_GET;
+        $_GET = [];
+        $_POST = [
+            'sesskey' => sesskey(),
+            'mailinfo' => 0,
+            'menu' => [
+                $student->id => 20,
+            ],
+            'oldgrade' => [
+                $student->id => -1,
+            ],
+            'presentationgrade' => [
+                $student->id => -1,
+            ],
+            'oldpresentationgrade' => [
+                $student->id => -1,
+            ],
+            'presentationstatus' => [
+                $student->id => CHECKMARK_PRESENTATION_STATUS_MARKED,
+            ],
+            'oldpresentationstatus' => [
+                $student->id => CHECKMARK_PRESENTATION_STATUS_MARKED,
+            ],
+            'presentationfeedback' => [
+                $student->id => $presentationfeedback,
+            ],
+            'oldpresentationfeedback' => [
+                $student->id => $presentationfeedback,
+            ],
+        ];
+
+        try {
+            $instance->submissions('fastgrade');
+        } finally {
+            $_POST = $oldpost;
+            $_GET = $oldget;
+        }
+
+        $feedback = $DB->get_record('checkmark_feedbacks', ['id' => $feedback->id], '*', MUST_EXIST);
+
+        $this->assertEquals(CHECKMARK_PRESENTATION_STATUS_MARKED, $feedback->presentationstatus);
+        $this->assertEquals(20, $feedback->grade);
+        $this->assertSame($presentationfeedback, $feedback->presentationfeedback);
+    }
+
+    /**
+     * Ensure quick grade explicit No is not overwritten by unchanged presentation feedback.
+     */
+    public function test_fastgrade_keeps_no_status_with_unchanged_presentation_feedback(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $student = $generator->create_user();
+        $generator->enrol_user($student->id, $course->id, 'student');
+        $checkmarkrecord = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+            'presentationgradebook' => 0,
+        ]);
+        $instance = new testable_checkmark($checkmarkrecord->cmid);
+        $presentationfeedback = 'Random selected: Example 1';
+        $feedback = $instance->prepare_new_feedback($student->id);
+        $feedback->presentationstatus = CHECKMARK_PRESENTATION_STATUS_YES;
+        $feedback->presentationfeedback = $presentationfeedback;
+        $feedback->presentationformat = FORMAT_HTML;
+        $DB->update_record('checkmark_feedbacks', $feedback);
+
+        $oldpost = $_POST;
+        $oldget = $_GET;
+        $_GET = [];
+        $_POST = [
+            'sesskey' => sesskey(),
+            'mailinfo' => 0,
+            'presentationstatus' => [
+                $student->id => CHECKMARK_PRESENTATION_STATUS_NO,
+            ],
+            'oldpresentationstatus' => [
+                $student->id => CHECKMARK_PRESENTATION_STATUS_YES,
+            ],
+            'presentationgrade' => [
+                $student->id => -1,
+            ],
+            'oldpresentationgrade' => [
+                $student->id => -1,
+            ],
+            'presentationfeedback' => [
+                $student->id => $presentationfeedback,
+            ],
+            'oldpresentationfeedback' => [
+                $student->id => $presentationfeedback,
+            ],
+        ];
+
+        try {
+            $instance->submissions('fastgrade');
+        } finally {
+            $_POST = $oldpost;
+            $_GET = $oldget;
+        }
+
+        $feedback = $DB->get_record('checkmark_feedbacks', ['id' => $feedback->id], '*', MUST_EXIST);
+
+        $this->assertEquals(CHECKMARK_PRESENTATION_STATUS_NO, $feedback->presentationstatus);
+        $this->assertNull($feedback->presentationgrade);
+        $this->assertSame($presentationfeedback, $feedback->presentationfeedback);
     }
 
     /**
