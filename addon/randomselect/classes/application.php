@@ -49,6 +49,12 @@ final class application {
     public function __construct(
         /** @var example[] Examples from the current Checkmark activity. */
         private readonly array $examples,
+        /** @var string Selected example mode. */
+        private readonly string $exampleselection = self::EXAMPLE_SELECTION_ALL,
+        /** @var int[] Selected example ids. */
+        private readonly array $selectedexampleids = [],
+        /** @var int Selected number of examples per student. */
+        private readonly int $examplesperstudent = 1,
     ) {
     }
 
@@ -68,6 +74,15 @@ final class application {
     }
 
     /**
+     * Return examples from the current Checkmark activity.
+     *
+     * @return example[]
+     */
+    public function get_examples(): array {
+        return $this->examples;
+    }
+
+    /**
      * Return example options in the activity order.
      *
      * @return array
@@ -76,12 +91,14 @@ final class application {
         $options = [];
 
         foreach ($this->examples as $example) {
+            $exampleid = (int) $example->get_id();
             $options[] = [
-                'id' => (int) $example->get_id(),
+                'id' => $exampleid,
                 'name' => $example->get_name(),
                 'label' => $this->get_example_label($example),
-                'inputid' => 'checkmark-randomselect-example-' . $example->get_id(),
-                'checked' => true,
+                'inputid' => 'checkmark-randomselect-example-' . $exampleid,
+                'checked' => $this->exampleselection === self::EXAMPLE_SELECTION_ALL
+                    || in_array($exampleid, $this->selectedexampleids, true),
             ];
         }
 
@@ -96,6 +113,7 @@ final class application {
      */
     public function export_for_template(renderer_base $output): array {
         $exampleoptions = $this->get_example_options();
+        $selectedexamplecount = $this->count_selected_examples($exampleoptions);
 
         return [
             'exampleslabel' => get_string('examplesfromcurrentcheckmark', 'checkmark_randomselect'),
@@ -106,18 +124,21 @@ final class application {
             'exampleselectionname' => 'exampleselection',
             'exampleselectionall' => self::EXAMPLE_SELECTION_ALL,
             'exampleselectionallid' => 'checkmark-randomselect-example-selection-all',
+            'exampleselectionallchecked' => $this->exampleselection === self::EXAMPLE_SELECTION_ALL,
             'exampleselectionselected' => self::EXAMPLE_SELECTION_SELECTED,
             'exampleselectionselectedid' => 'checkmark-randomselect-example-selection-selected',
+            'exampleselectionselectedchecked' => $this->exampleselection === self::EXAMPLE_SELECTION_SELECTED,
             'alllabel' => get_string('all'),
             'selectedlabel' => get_string('selected', 'form'),
             'nonelabel' => get_string('none'),
             'exampleoptions' => $exampleoptions,
             'hasexampleoptions' => !empty($exampleoptions),
+            'hasselectedexamples' => $selectedexamplecount > 0,
             'nooptionsmessage' => get_string('noexamplesavailable', 'checkmark_randomselect'),
             'examplesperstudentlabel' => get_string('examplesperstudent', 'checkmark_randomselect'),
             'examplesperstudenthelpicon' => $output->help_icon('examplesperstudent', 'checkmark_randomselect'),
             'examplesperstudentname' => 'examplesperstudent',
-            'examplesperstudentoptions' => $this->get_examples_per_student_options(count($exampleoptions)),
+            'examplesperstudentoptions' => $this->get_examples_per_student_options($selectedexamplecount),
         ];
     }
 
@@ -129,16 +150,31 @@ final class application {
      */
     private function get_examples_per_student_options(int $examplecount): array {
         $options = [];
+        $selectedvalue = min(max($this->examplesperstudent, 1), max($examplecount, 1));
 
         for ($i = 1; $i <= $examplecount; $i++) {
             $options[] = [
                 'value' => $i,
                 'label' => $i,
-                'selected' => $i === 1,
+                'selected' => $i === $selectedvalue,
             ];
         }
 
         return $options;
+    }
+
+    /**
+     * Count currently selected examples.
+     *
+     * @param array $exampleoptions Exported example options.
+     * @return int
+     */
+    private function count_selected_examples(array $exampleoptions): int {
+        if ($this->exampleselection === self::EXAMPLE_SELECTION_ALL) {
+            return count($exampleoptions);
+        }
+
+        return count(array_filter($exampleoptions, static fn(array $option): bool => !empty($option['checked'])));
     }
 
     /**

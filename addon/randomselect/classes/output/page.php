@@ -26,6 +26,8 @@ namespace checkmark_randomselect\output;
 
 use checkmark_randomselect\application;
 use checkmark_randomselect\filter;
+use checkmark_randomselect\formdata;
+use checkmark_randomselect\preview;
 use moodle_url;
 use renderable;
 use renderer_base;
@@ -43,16 +45,28 @@ final class page implements renderable, templatable {
      * Constructor.
      *
      * @param moodle_url $cancelurl URL used by the cancel button.
+     * @param moodle_url $formurl URL used by the form.
      * @param filter $filter Filter criteria data.
      * @param application $application Field of application data.
+     * @param preview|null $preview Random selection preview.
+     * @param int $courseid Course id.
+     * @param string $previewfingerprint Current preview settings fingerprint.
      */
     public function __construct(
         /** @var moodle_url URL used by the cancel button. */
         private readonly moodle_url $cancelurl,
+        /** @var moodle_url URL used by the form. */
+        private readonly moodle_url $formurl,
         /** @var filter Filter criteria data. */
         private readonly filter $filter,
         /** @var application Field of application data. */
         private readonly application $application,
+        /** @var preview|null Random selection preview. */
+        private readonly ?preview $preview,
+        /** @var int Course id. */
+        private readonly int $courseid,
+        /** @var string Current preview settings fingerprint. */
+        private readonly string $previewfingerprint,
     ) {
     }
 
@@ -63,8 +77,14 @@ final class page implements renderable, templatable {
      * @return array Template data.
      */
     public function export_for_template(renderer_base $output): array {
+        $hasassignments = $this->preview !== null && $this->preview->has_assignments();
+
         return [
             'pageintro' => get_string('pageintro', 'checkmark_randomselect'),
+            'formurl' => $this->formurl->out(false),
+            'sesskey' => sesskey(),
+            'actionname' => 'action',
+            'previewdataname' => formdata::PREVIEW_DATA,
             'sections' => [
                 $this->get_collapsible_section(
                     'filtercriteria',
@@ -81,10 +101,37 @@ final class page implements renderable, templatable {
             ],
             'previewtitle' => get_string('preview', 'checkmark_randomselect'),
             'previewhelpicon' => $output->help_icon('preview', 'checkmark_randomselect'),
+            'preview' => $this->get_preview_data(),
             'applybuttonlabel' => get_string('applyrandomselection', 'checkmark_randomselect'),
+            'applyaction' => formdata::ACTION_APPLY,
+            'applybuttonclass' => $hasassignments ? 'btn-primary' : 'btn-secondary',
+            'applydisabled' => !$hasassignments,
             'createpreviewbuttonlabel' => get_string('createnewpreview', 'checkmark_randomselect'),
+            'createpreviewaction' => formdata::ACTION_PREVIEW,
+            'createpreviewbuttonclass' => $this->preview === null ? 'btn-primary' : 'btn-secondary',
             'cancelbuttonlabel' => get_string('cancel'),
             'cancelurl' => $this->cancelurl->out(false),
+        ];
+    }
+
+    /**
+     * Return preview template data.
+     *
+     * @return array
+     */
+    private function get_preview_data(): array {
+        if ($this->preview !== null) {
+            return $this->preview->export_for_template($this->courseid, $this->previewfingerprint);
+        }
+
+        return [
+            'haspreview' => false,
+            'hasassignments' => false,
+            'hasunassigned' => false,
+            'previewdata' => '',
+            'nopreviewtitle' => get_string('nopreviewtitle', 'checkmark_randomselect'),
+            'nopreviewbody' => get_string('nopreviewbody', 'checkmark_randomselect'),
+            'loadinglabel' => get_string('previewloading', 'checkmark_randomselect'),
         ];
     }
 

@@ -55,6 +55,68 @@ if ($returnurl !== '') {
     $backurl = new moodle_url('/mod/checkmark/submissions.php', ['id' => $cm->id]);
 }
 
+$renderer = $PAGE->get_renderer('core');
+$defaultfilter = \checkmark_randomselect\filter::default_for_course((int) $course->id);
+$defaultapplication = \checkmark_randomselect\application::default_for_checkmark($checkmark);
+$formdata = \checkmark_randomselect\formdata::from_request($defaultfilter, $defaultapplication);
+$filter = new \checkmark_randomselect\filter(
+    (int) $course->id,
+    $formdata->includeexistingpresentations,
+    $formdata->checkmarkselection,
+    $formdata->selectedcheckmarkids
+);
+$application = new \checkmark_randomselect\application(
+    $defaultapplication->get_examples(),
+    $formdata->exampleselection,
+    $formdata->selectedexampleids,
+    $formdata->examplesperstudent
+);
+$preview = null;
+
+if ($formdata->action !== '') {
+    require_sesskey();
+
+    $selector = new \checkmark_randomselect\selector(
+        $cm,
+        $checkmark,
+        $context,
+        $formdata->selectedcheckmarkids,
+        $formdata->includeexistingpresentations,
+        $formdata->selectedexampleids,
+        $formdata->examplesperstudent
+    );
+
+    if ($formdata->action === \checkmark_randomselect\formdata::ACTION_PREVIEW) {
+        $preview = $selector->create_preview();
+    } else if ($formdata->action === \checkmark_randomselect\formdata::ACTION_APPLY) {
+        if (\checkmark_randomselect\preview::decode_fingerprint($formdata->previewdata) === $formdata->get_fingerprint()) {
+            $preview = $selector->preview_from_assignments(
+                \checkmark_randomselect\preview::decode_assignments($formdata->previewdata)
+            );
+        }
+
+        if ($preview === null || !$preview->has_assignments()) {
+            \core\notification::warning(get_string('invalidpreview', 'checkmark_randomselect'));
+        } else {
+            $checkmarkinstance = new \checkmark($cm->id, $checkmark, $cm, $course);
+            $result = (new \checkmark_randomselect\applier($checkmarkinstance))->apply($preview);
+            $submissionsurl = new moodle_url('/mod/checkmark/submissions.php', [
+                'id' => $cm->id,
+                'updatepref' => 1,
+                'filter' => \checkmark::FILTER_PRESENTATION_MARKED,
+                'quickgrade' => get_user_preferences('checkmark_quickgrade', 0),
+                'perpage' => get_user_preferences('checkmark_perpage', 10),
+            ]);
+            redirect(
+                $submissionsurl,
+                get_string('assignmentsuccess', 'checkmark_randomselect', (object) $result),
+                null,
+                \core\output\notification::NOTIFY_SUCCESS
+            );
+        }
+    }
+}
+
 echo $OUTPUT->header();
 echo html_writer::start_div('header-maxwidth');
 echo $OUTPUT->heading(get_string('randomselectionforpresentation', 'checkmark_randomselect'));
@@ -63,9 +125,14 @@ echo html_writer::link($backurl, get_string('back'), [
     'id' => 'randomselect-back',
 ]);
 echo html_writer::end_div();
-$renderer = $PAGE->get_renderer('core');
-$filter = \checkmark_randomselect\filter::default_for_course((int) $course->id);
-$application = \checkmark_randomselect\application::default_for_checkmark($checkmark);
-$page = new \checkmark_randomselect\output\page($backurl, $filter, $application);
+$page = new \checkmark_randomselect\output\page(
+    $backurl,
+    $PAGE->url,
+    $filter,
+    $application,
+    $preview,
+    (int) $course->id,
+    $formdata->get_fingerprint()
+);
 echo $OUTPUT->render_from_template('checkmark_randomselect/page', $page->export_for_template($renderer));
 echo $OUTPUT->footer();

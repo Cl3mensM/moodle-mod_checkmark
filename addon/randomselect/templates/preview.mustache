@@ -1,0 +1,108 @@
+{{!
+    This file is part of mod_checkmark for Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template checkmark_randomselect/preview
+
+    Preview state for the Checkmark random selection page.
+
+    Context variables required for this template:
+    * haspreview - Whether a preview exists.
+    * hasassignments - Whether the preview contains assignments.
+    * hasunassigned - Whether the preview contains unassigned examples.
+    * nopreviewtitle - Title for the no-preview notice.
+    * nopreviewbody - Body for the no-preview notice.
+    * loadinglabel - Label for the loading preview state.
+    * unassignedintro - Introductory warning text for unassigned examples.
+    * unassignedexamples - Unassigned example rows.
+    * assignmentintro - Introductory text for assignments.
+    * assignments - Assigned example rows.
+    * nextsteps - Text explaining the next step.
+
+    Example context (json):
+    {
+        "haspreview": true,
+        "hasassignments": true,
+        "hasunassigned": false,
+        "loadinglabel": "Preview is being created",
+        "assignmentintro": "1 Example(s) can be pre-selected for 1 students:",
+        "assignments": [
+            {
+                "examplename": "Example 1",
+                "userfullname": "Student One",
+                "userurl": "/user/view.php?id=3&course=2"
+            }
+        ],
+        "nextsteps": "You can accept the current selection or generate a new preview."
+    }
+}}
+<div class="d-none" data-region="checkmark-randomselect-preview-loading">
+    <div class="progress mb-2" aria-hidden="true">
+        <div class="progress-bar" role="progressbar" style="width: 100%"></div>
+    </div>
+    <div>{{loadinglabel}}</div>
+</div>
+
+{{^haspreview}}
+    <div class="alert alert-warning d-flex align-items-start mb-0" role="status">
+        <span class="mr-3" aria-hidden="true">
+            <i class="icon fa fa-circle-exclamation fa-fw fa-2x"></i>
+        </span>
+        <span class="sr-only">{{#str}}warning{{/str}}</span>
+        <div><strong>{{nopreviewtitle}}</strong> {{nopreviewbody}}</div>
+    </div>
+{{/haspreview}}
+
+{{#haspreview}}
+    {{#hasunassigned}}
+        <div class="alert alert-warning d-flex align-items-start mb-4" role="status">
+            <span class="mr-3" aria-hidden="true">
+                <i class="icon fa fa-circle-exclamation fa-fw fa-2x"></i>
+            </span>
+            <span class="sr-only">{{#str}}warning{{/str}}</span>
+            <div>
+                <div>{{unassignedintro}}</div>
+                <ul class="mb-0 mt-2">
+                    {{#unassignedexamples}}
+                        <li><strong>{{examplename}}</strong></li>
+                    {{/unassignedexamples}}
+                </ul>
+            </div>
+        </div>
+    {{/hasunassigned}}
+
+    {{#hasassignments}}
+        <div class="border bg-white rounded p-4 d-flex align-items-start">
+            <span class="mr-3" aria-hidden="true">
+                <i class="icon fa fa-circle-info fa-fw fa-2x"></i>
+            </span>
+            <span class="sr-only">{{#str}}info{{/str}}</span>
+            <div>
+                <div><strong>{{assignmentintro}}</strong></div>
+                <ul class="mb-4 mt-2">
+                    {{#assignments}}
+                        <li>
+                            <strong>{{examplename}}</strong>
+                            <span aria-hidden="true"> &rarr; </span>
+                            <a href="{{userurl}}">{{userfullname}}</a>
+                        </li>
+                    {{/assignments}}
+                </ul>
+                <div>{{nextsteps}}</div>
+            </div>
+        </div>
+    {{/hasassignments}}
+{{/haspreview}}

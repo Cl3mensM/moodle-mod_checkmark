@@ -53,6 +53,10 @@ final class filter {
         private readonly int $courseid,
         /** @var bool Default for the existing presentation selector. */
         private readonly bool $includeexistingpresentations,
+        /** @var string Selected Checkmark activity mode. */
+        private readonly string $checkmarkselection = self::CHECKMARK_SELECTION_ALL,
+        /** @var int[] Selected Checkmark activity ids. */
+        private readonly array $selectedcheckmarkids = [],
     ) {
     }
 
@@ -80,14 +84,16 @@ final class filter {
                 continue;
             }
 
+            $checkmarkid = (int) $cm->instance;
             $context = context_module::instance($cm->id);
             $name = format_string($cm->name, true, ['context' => $context]);
             $options[] = [
-                'id' => (int) $cm->instance,
+                'id' => $checkmarkid,
                 'cmid' => (int) $cm->id,
                 'name' => $name,
-                'inputid' => 'checkmark-randomselect-checkmark-' . $cm->instance,
-                'checked' => true,
+                'inputid' => 'checkmark-randomselect-checkmark-' . $checkmarkid,
+                'checked' => $this->checkmarkselection === self::CHECKMARK_SELECTION_ALL
+                    || in_array($checkmarkid, $this->selectedcheckmarkids, true),
             ];
         }
 
@@ -111,8 +117,10 @@ final class filter {
             'checkmarkselectionname' => 'checkmarkselection',
             'checkmarkselectionall' => self::CHECKMARK_SELECTION_ALL,
             'checkmarkselectionallid' => 'checkmark-randomselect-checkmark-selection-all',
+            'checkmarkselectionallchecked' => $this->checkmarkselection === self::CHECKMARK_SELECTION_ALL,
             'checkmarkselectionselected' => self::CHECKMARK_SELECTION_SELECTED,
             'checkmarkselectionselectedid' => 'checkmark-randomselect-checkmark-selection-selected',
+            'checkmarkselectionselectedchecked' => $this->checkmarkselection === self::CHECKMARK_SELECTION_SELECTED,
             'alllabel' => get_string('all'),
             'selectedlabel' => get_string('selected', 'form'),
             'nonelabel' => get_string('none'),

@@ -25,8 +25,10 @@
     * checkmarkselectionname - Name for the activity selection mode radios.
     * checkmarkselectionall - Value for selecting all activities.
     * checkmarkselectionallid - Id for the all activities radio.
+    * checkmarkselectionallchecked - Whether the all activities radio is checked.
     * checkmarkselectionselected - Value for selecting specific activities.
     * checkmarkselectionselectedid - Id for the selected activities radio.
+    * checkmarkselectionselectedchecked - Whether the selected activities radio is checked.
     * alllabel - Label for All controls.
     * selectedlabel - Label for the Selected radio.
     * nonelabel - Label for the None action.
@@ -45,8 +47,10 @@
         "checkmarkselectionname": "checkmarkselection",
         "checkmarkselectionall": "all",
         "checkmarkselectionallid": "checkmark-randomselect-checkmark-selection-all",
+        "checkmarkselectionallchecked": true,
         "checkmarkselectionselected": "selected",
         "checkmarkselectionselectedid": "checkmark-randomselect-checkmark-selection-selected",
+        "checkmarkselectionselectedchecked": false,
         "alllabel": "All",
         "selectedlabel": "Selected",
         "nonelabel": "None",
@@ -80,13 +84,15 @@
         <div class="col-md-8">
             <div class="form-check">
                 <input class="form-check-input" type="radio" name="{{checkmarkselectionname}}"
-                       id="{{checkmarkselectionallid}}" value="{{checkmarkselectionall}}" checked
+                       id="{{checkmarkselectionallid}}" value="{{checkmarkselectionall}}"
+                       {{#checkmarkselectionallchecked}}checked{{/checkmarkselectionallchecked}}
                        data-region="checkmark-randomselect-checkmark-selection-all">
                 <label class="form-check-label" for="{{checkmarkselectionallid}}">{{alllabel}}</label>
             </div>
             <div class="form-check mt-2">
                 <input class="form-check-input" type="radio" name="{{checkmarkselectionname}}"
                        id="{{checkmarkselectionselectedid}}" value="{{checkmarkselectionselected}}"
+                       {{#checkmarkselectionselectedchecked}}checked{{/checkmarkselectionselectedchecked}}
                        data-region="checkmark-randomselect-checkmark-selection-selected">
                 <label class="form-check-label" for="{{checkmarkselectionselectedid}}">{{selectedlabel}}</label>
             </div>

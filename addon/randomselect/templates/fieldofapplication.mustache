@@ -25,13 +25,16 @@
     * exampleselectionname - Name for the example selection mode radios.
     * exampleselectionall - Value for selecting all examples.
     * exampleselectionallid - Id for the all examples radio.
+    * exampleselectionallchecked - Whether the all examples radio is checked.
     * exampleselectionselected - Value for selecting specific examples.
     * exampleselectionselectedid - Id for the selected examples radio.
+    * exampleselectionselectedchecked - Whether the selected examples radio is checked.
     * alllabel - Label for All controls.
     * selectedlabel - Label for the Selected radio.
     * nonelabel - Label for the None action.
     * exampleoptions - Current Checkmark activity example options.
     * hasexampleoptions - Whether examples are available.
+    * hasselectedexamples - Whether examples are currently selected.
     * nooptionsmessage - Message shown when no examples are available.
     * examplesperstudentlabel - Label for the examples per student selector.
     * examplesperstudenthelpicon - Rendered help icon for the examples per student selector.
@@ -45,8 +48,10 @@
         "exampleselectionname": "exampleselection",
         "exampleselectionall": "all",
         "exampleselectionallid": "checkmark-randomselect-example-selection-all",
+        "exampleselectionallchecked": true,
         "exampleselectionselected": "selected",
         "exampleselectionselectedid": "checkmark-randomselect-example-selection-selected",
+        "exampleselectionselectedchecked": false,
         "alllabel": "All",
         "selectedlabel": "Selected",
         "nonelabel": "None",
@@ -79,13 +84,15 @@
         <div class="col-md-8">
             <div class="form-check">
                 <input class="form-check-input" type="radio" name="{{exampleselectionname}}"
-                       id="{{exampleselectionallid}}" value="{{exampleselectionall}}" checked
+                       id="{{exampleselectionallid}}" value="{{exampleselectionall}}"
+                       {{#exampleselectionallchecked}}checked{{/exampleselectionallchecked}}
                        data-region="checkmark-randomselect-example-selection-all">
                 <label class="form-check-label" for="{{exampleselectionallid}}">{{alllabel}}</label>
             </div>
             <div class="form-check mt-2">
                 <input class="form-check-input" type="radio" name="{{exampleselectionname}}"
                        id="{{exampleselectionselectedid}}" value="{{exampleselectionselected}}"
+                       {{#exampleselectionselectedchecked}}checked{{/exampleselectionselectedchecked}}
                        data-region="checkmark-randomselect-example-selection-selected">
                 <label class="form-check-label" for="{{exampleselectionselectedid}}">{{selectedlabel}}</label>
             </div>
@@ -127,7 +134,7 @@
         <div class="col-md-8">
             <select class="form-select w-auto" id="checkmark-randomselect-examples-per-student"
                     name="{{examplesperstudentname}}" data-region="checkmark-randomselect-examples-per-student"
-                    {{^hasexampleoptions}}disabled{{/hasexampleoptions}}>
+                    {{^hasselectedexamples}}disabled{{/hasselectedexamples}}>
                 {{#examplesperstudentoptions}}
                     <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
                 {{/examplesperstudentoptions}}

@@ -25,8 +25,10 @@ define(['theme_boost/bootstrap/collapse', 'core/pending'], function(Collapse, Pe
 
     const SELECTORS = {
         COLLAPSE_ALL: '#checkmark-randomselect-collapseall',
+        CREATE_PREVIEW: '[data-action="create-preview"]',
         FIELD_OF_APPLICATION: '[data-region="checkmark-randomselect-fieldofapplication"]',
         FILTER_CRITERIA: '[data-region="checkmark-randomselect-filtercriteria"]',
+        FORM: '[data-region="checkmark-randomselect-form"]',
         CHECKMARK_LIST: '[data-region="checkmark-randomselect-checkmark-list"]',
         CHECKMARK_OPTION: '[data-region="checkmark-randomselect-checkmark-option"]',
         CHECKMARK_SELECTION_ALL: '[data-region="checkmark-randomselect-checkmark-selection-all"]',
@@ -36,6 +38,8 @@ define(['theme_boost/bootstrap/collapse', 'core/pending'], function(Collapse, Pe
         EXAMPLE_SELECTION_ALL: '[data-region="checkmark-randomselect-example-selection-all"]',
         EXAMPLE_SELECTION_SELECTED: '[data-region="checkmark-randomselect-example-selection-selected"]',
         EXAMPLES_PER_STUDENT: '[data-region="checkmark-randomselect-examples-per-student"]',
+        PREVIEW: '[data-region="checkmark-randomselect-preview"]',
+        PREVIEW_LOADING: '[data-region="checkmark-randomselect-preview-loading"]',
         SELECT_ALL_EXAMPLES: '[data-action="select-all-examples"]',
         SELECT_NO_EXAMPLES: '[data-action="select-no-examples"]',
         SELECT_ALL_CHECKMARKS: '[data-action="select-all-checkmarks"]',
@@ -46,6 +50,8 @@ define(['theme_boost/bootstrap/collapse', 'core/pending'], function(Collapse, Pe
 
     const CLASSES = {
         COLLAPSED: 'collapsed',
+        DISABLED: 'disabled',
+        D_NONE: 'd-none',
         SHOW: 'show',
         TEXT_MUTED: 'text-muted',
     };
@@ -312,6 +318,56 @@ define(['theme_boost/bootstrap/collapse', 'core/pending'], function(Collapse, Pe
     };
 
     /**
+     * Show a short loading state before submitting the preview form.
+     *
+     * @param {HTMLElement} page Page container.
+     */
+    const initPreviewLoading = page => {
+        const form = page.querySelector(SELECTORS.FORM);
+        const createPreview = page.querySelector(SELECTORS.CREATE_PREVIEW);
+
+        if (!form || !createPreview) {
+            return;
+        }
+
+        createPreview.addEventListener('click', event => {
+            if (createPreview.dataset.randomselectSubmitting === '1') {
+                event.preventDefault();
+                return;
+            }
+
+            event.preventDefault();
+            const preview = page.querySelector(SELECTORS.PREVIEW);
+            const loading = page.querySelector(SELECTORS.PREVIEW_LOADING);
+
+            if (preview && loading) {
+                [...preview.children].forEach(child => {
+                    child.classList.toggle(CLASSES.D_NONE, child !== loading);
+                });
+                loading.classList.remove(CLASSES.D_NONE);
+            }
+
+            createPreview.classList.add(CLASSES.DISABLED);
+            createPreview.setAttribute('aria-disabled', 'true');
+            createPreview.dataset.randomselectSubmitting = '1';
+
+            window.setTimeout(() => {
+                if (typeof form.requestSubmit === 'function') {
+                    form.requestSubmit(createPreview);
+                    return;
+                }
+
+                const action = document.createElement('input');
+                action.type = 'hidden';
+                action.name = createPreview.name;
+                action.value = createPreview.value;
+                form.appendChild(action);
+                form.submit();
+            }, 600);
+        });
+    };
+
+    /**
      * Initialise the random selection layout.
      *
      * @param {string} selector Page container selector.
@@ -374,6 +430,7 @@ define(['theme_boost/bootstrap/collapse', 'core/pending'], function(Collapse, Pe
 
         initFilterCriteria(page);
         initFieldOfApplication(page);
+        initPreviewLoading(page);
 
         pendingPromise.resolve();
     };

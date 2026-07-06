@@ -43,8 +43,12 @@ require_once($CFG->dirroot . '/mod/checkmark/locallib.php');
 #[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_plugin_manager::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_randomselect\access::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_randomselect\application::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_randomselect\applier::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_randomselect\filter::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_randomselect\formdata::class)]
 #[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_randomselect\output\page::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_randomselect\preview::class)]
+#[\PHPUnit\Framework\Attributes\CoversClass(\checkmark_randomselect\selector::class)]
 final class checkmark_subplugin_test extends \advanced_testcase {
     /**
      * Checkmark declares the add-on subplugin type.
@@ -72,10 +76,15 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         $this->assertFileExists($plugins['randomselect'] . '/db/access.php');
         $this->assertFileExists($plugins['randomselect'] . '/index.php');
         $this->assertFileExists($plugins['randomselect'] . '/classes/application.php');
+        $this->assertFileExists($plugins['randomselect'] . '/classes/applier.php');
         $this->assertFileExists($plugins['randomselect'] . '/classes/filter.php');
+        $this->assertFileExists($plugins['randomselect'] . '/classes/formdata.php');
+        $this->assertFileExists($plugins['randomselect'] . '/classes/preview.php');
+        $this->assertFileExists($plugins['randomselect'] . '/classes/selector.php');
         $this->assertFileExists($plugins['randomselect'] . '/templates/page.mustache');
         $this->assertFileExists($plugins['randomselect'] . '/templates/filtercriteria.mustache');
         $this->assertFileExists($plugins['randomselect'] . '/templates/fieldofapplication.mustache');
+        $this->assertFileExists($plugins['randomselect'] . '/templates/preview.mustache');
         $this->assertFileExists($plugins['randomselect'] . '/amd/src/randomselect_layout.js');
         $this->assertFileExists($plugins['randomselect'] . '/amd/build/randomselect_layout.min.js');
         $this->assertFileExists($plugins['randomselect'] . '/amd/build/randomselect_layout.min.js.map');
@@ -422,8 +431,12 @@ final class checkmark_subplugin_test extends \advanced_testcase {
 
         $page = new \checkmark_randomselect\output\page(
             new \moodle_url('/mod/checkmark/view.php', ['id' => 23]),
+            new \moodle_url('/mod/checkmark/addon/randomselect/index.php', ['id' => 23]),
             new \checkmark_randomselect\filter(SITEID, false),
-            new \checkmark_randomselect\application([])
+            new \checkmark_randomselect\application([]),
+            null,
+            SITEID,
+            ''
         );
 
         $data = $page->export_for_template($PAGE->get_renderer('core'));
@@ -449,16 +462,163 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         );
         $this->assertSame(get_string('preview', 'checkmark_randomselect'), $data['previewtitle']);
         $this->assertNotEmpty($data['previewhelpicon']);
+        $this->assertFalse($data['preview']['haspreview']);
+        $this->assertSame(get_string('nopreviewtitle', 'checkmark_randomselect'), $data['preview']['nopreviewtitle']);
         $this->assertSame(
             get_string('applyrandomselection', 'checkmark_randomselect'),
             $data['applybuttonlabel']
         );
+        $this->assertTrue($data['applydisabled']);
         $this->assertSame(
             get_string('createnewpreview', 'checkmark_randomselect'),
             $data['createpreviewbuttonlabel']
         );
         $this->assertSame(get_string('cancel'), $data['cancelbuttonlabel']);
         $this->assertStringContainsString('/mod/checkmark/view.php?id=23', $data['cancelurl']);
+    }
+
+    /**
+     * Random selection only assigns examples to students who checked them.
+     */
+    public function test_randomselect_preview_uses_checked_examples_and_excludes_existing_presentations(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+        $plugingenerator = $generator->get_plugin_generator('mod_checkmark');
+        $course = $generator->create_course();
+        $students = [
+            'existing' => $generator->create_user(),
+            'eligible' => $generator->create_user(),
+            'unchecked' => $generator->create_user(),
+        ];
+
+        foreach ($students as $student) {
+            $generator->enrol_user($student->id, $course->id, 'student');
+        }
+
+        $checkmark = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+            'examplecount' => 2,
+            'grade' => 20,
+        ]);
+        $exampleids = $this->get_example_ids($checkmark);
+
+        $plugingenerator->create_submission([
+            'checkmark' => $checkmark->id,
+            'userid' => $students['existing']->id,
+            'example1' => 1,
+        ]);
+        $plugingenerator->create_submission([
+            'checkmark' => $checkmark->id,
+            'userid' => $students['eligible']->id,
+            'example2' => 1,
+        ]);
+        $plugingenerator->create_submission([
+            'checkmark' => $checkmark->id,
+            'userid' => $students['unchecked']->id,
+        ]);
+        $plugingenerator->create_feedback([
+            'checkmark' => $checkmark->id,
+            'userid' => $students['existing']->id,
+            'presentationstatus' => CHECKMARK_PRESENTATION_STATUS_YES,
+        ]);
+
+        $selector = new \checkmark_randomselect\selector(
+            get_coursemodule_from_id('checkmark', $checkmark->cmid),
+            $checkmark,
+            \context_module::instance($checkmark->cmid),
+            [$checkmark->id],
+            false,
+            $exampleids,
+            1,
+            static function (array &$items): void {
+                // Keep test output deterministic.
+            }
+        );
+
+        $preview = $selector->create_preview();
+        $assignments = $preview->get_assignments();
+
+        $this->assertCount(1, $assignments);
+        $this->assertSame($exampleids[1], $assignments[0]['exampleid']);
+        $this->assertSame((int) $students['eligible']->id, $assignments[0]['userid']);
+
+        $data = $preview->export_for_template((int) $course->id);
+        $this->assertTrue($data['hasunassigned']);
+        $this->assertSame($exampleids[0], $data['unassignedexamples'][0]['exampleid']);
+    }
+
+    /**
+     * Applying a random selection marks presentation status and appends presentation feedback.
+     */
+    public function test_randomselect_apply_marks_and_appends_presentation_feedback(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+        $plugingenerator = $generator->get_plugin_generator('mod_checkmark');
+        $course = $generator->create_course();
+        $student = $generator->create_user();
+        $generator->enrol_user($student->id, $course->id, 'student');
+        $checkmark = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+            'examplecount' => 2,
+            'grade' => 20,
+        ]);
+        $exampleids = $this->get_example_ids($checkmark);
+
+        $plugingenerator->create_submission([
+            'checkmark' => $checkmark->id,
+            'userid' => $student->id,
+            'example1' => 1,
+            'example2' => 1,
+        ]);
+        $plugingenerator->create_feedback([
+            'checkmark' => $checkmark->id,
+            'userid' => $student->id,
+            'presentationstatus' => CHECKMARK_PRESENTATION_STATUS_NO,
+            'presentationfeedback' => '<p>Existing presentation note.</p>',
+        ]);
+
+        $selector = new \checkmark_randomselect\selector(
+            get_coursemodule_from_id('checkmark', $checkmark->cmid),
+            $checkmark,
+            \context_module::instance($checkmark->cmid),
+            [$checkmark->id],
+            true,
+            $exampleids,
+            2,
+            static function (array &$items): void {
+                // Keep test output deterministic.
+            }
+        );
+        $preview = $selector->create_preview();
+
+        $result = (new \checkmark_randomselect\applier(new \checkmark($checkmark->cmid)))->apply($preview);
+
+        $this->assertSame(['examplecount' => 2, 'studentcount' => 1], $result);
+
+        $feedback = $DB->get_record('checkmark_feedbacks', [
+            'checkmarkid' => $checkmark->id,
+            'userid' => $student->id,
+        ], '*', MUST_EXIST);
+
+        $this->assertSame(CHECKMARK_PRESENTATION_STATUS_MARKED, (int) $feedback->presentationstatus);
+        $this->assertStringContainsString('Existing presentation note.', $feedback->presentationfeedback);
+        $this->assertStringContainsString(
+            get_string('feedbackblockheading', 'checkmark_randomselect'),
+            $feedback->presentationfeedback
+        );
+        $this->assertStringContainsString('Example 1', $feedback->presentationfeedback);
+        $this->assertStringContainsString('Example 2', $feedback->presentationfeedback);
+        $this->assertSame((int) FORMAT_HTML, (int) $feedback->presentationformat);
     }
 
     /**
@@ -510,5 +670,15 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         set_config('version', $plugin->version, $plugin->component);
 
         \core_plugin_manager::reset_caches(true);
+    }
+
+    /**
+     * Return example ids for a Checkmark activity.
+     *
+     * @param object $checkmark Checkmark activity record.
+     * @return int[]
+     */
+    private function get_example_ids(object $checkmark): array {
+        return array_keys(\checkmark::get_examples_static($checkmark->id, $checkmark->exampleprefix));
     }
 }
