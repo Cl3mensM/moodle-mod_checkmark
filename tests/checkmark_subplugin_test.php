@@ -578,14 +578,20 @@ final class checkmark_subplugin_test extends \advanced_testcase {
 
         $preview = $selector->create_preview();
         $assignments = $preview->get_assignments();
+        $assignedusersbyexample = [];
+        foreach ($assignments as $assignment) {
+            $assignedusersbyexample[$assignment['exampleid']] = $assignment['userid'];
+        }
 
-        $this->assertCount(1, $assignments);
-        $this->assertSame($exampleids[1], $assignments[0]['exampleid']);
-        $this->assertSame((int) $students['eligible']->id, $assignments[0]['userid']);
+        $this->assertCount(2, $assignments);
+        $this->assertSame((int) $students['teacherforced']->id, $assignedusersbyexample[$exampleids[0]]);
+        $this->assertSame((int) $students['eligible']->id, $assignedusersbyexample[$exampleids[1]]);
+        $this->assertNotContains((int) $students['existing']->id, $assignedusersbyexample);
+        $this->assertNotContains((int) $students['teacherunchecked']->id, $assignedusersbyexample);
+        $this->assertNotContains((int) $students['unchecked']->id, $assignedusersbyexample);
 
         $data = $preview->export_for_template((int) $course->id);
-        $this->assertTrue($data['hasunassigned']);
-        $this->assertSame($exampleids[0], $data['unassignedexamples'][0]['exampleid']);
+        $this->assertFalse($data['hasunassigned']);
     }
 
     /**
@@ -653,9 +659,125 @@ final class checkmark_subplugin_test extends \advanced_testcase {
             get_string('feedbackblockheading', 'checkmark_randomselect'),
             $feedback->presentationfeedback
         );
+        $this->assertStringContainsString('checkmark-randomselect-feedback', $feedback->presentationfeedback);
         $this->assertStringContainsString('Example 1', $feedback->presentationfeedback);
         $this->assertStringContainsString('Example 2', $feedback->presentationfeedback);
         $this->assertSame((int) FORMAT_HTML, (int) $feedback->presentationformat);
+    }
+
+    /**
+     * Applying a random selection replaces only a previous generated feedback block.
+     */
+    public function test_randomselect_apply_replaces_previous_generated_feedback_block(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+        $plugingenerator = $generator->get_plugin_generator('mod_checkmark');
+        $course = $generator->create_course();
+        $student = $generator->create_user();
+        $generator->enrol_user($student->id, $course->id, 'student');
+        $checkmark = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+            'examplecount' => 2,
+            'grade' => 20,
+        ]);
+
+        $plugingenerator->create_feedback([
+            'checkmark' => $checkmark->id,
+            'userid' => $student->id,
+            'presentationstatus' => CHECKMARK_PRESENTATION_STATUS_MARKED,
+            'presentationfeedback' => '<p>Teacher note before.</p>'
+                . '<div class="checkmark-randomselect-feedback"><p>'
+                . s(get_string('feedbackblockheading', 'checkmark_randomselect'))
+                . '</p><ul><li>Old example</li></ul></div>'
+                . '<p>Teacher note after.</p>',
+        ]);
+
+        $preview = new \checkmark_randomselect\preview([
+            [
+                'exampleid' => 2,
+                'examplename' => 'New example',
+                'userid' => (int) $student->id,
+                'userfullname' => fullname($student),
+            ],
+        ], []);
+        (new \checkmark_randomselect\applier(new \checkmark($checkmark->cmid)))->apply($preview);
+
+        $feedback = $DB->get_record('checkmark_feedbacks', [
+            'checkmarkid' => $checkmark->id,
+            'userid' => $student->id,
+        ], '*', MUST_EXIST);
+
+        $this->assertStringContainsString('Teacher note before.', $feedback->presentationfeedback);
+        $this->assertStringContainsString('Teacher note after.', $feedback->presentationfeedback);
+        $this->assertStringContainsString('New example', $feedback->presentationfeedback);
+        $this->assertStringNotContainsString('Old example', $feedback->presentationfeedback);
+        $this->assertSame(1, substr_count($feedback->presentationfeedback, 'checkmark-randomselect-feedback'));
+        $this->assertSame(
+            1,
+            substr_count($feedback->presentationfeedback, get_string('feedbackblockheading', 'checkmark_randomselect'))
+        );
+    }
+
+    /**
+     * Applying a random selection replaces legacy generated feedback blocks without wrappers.
+     */
+    public function test_randomselect_apply_replaces_legacy_generated_feedback_block(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+        $plugingenerator = $generator->get_plugin_generator('mod_checkmark');
+        $course = $generator->create_course();
+        $student = $generator->create_user();
+        $generator->enrol_user($student->id, $course->id, 'student');
+        $checkmark = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+            'examplecount' => 2,
+            'grade' => 20,
+        ]);
+
+        $plugingenerator->create_feedback([
+            'checkmark' => $checkmark->id,
+            'userid' => $student->id,
+            'presentationstatus' => CHECKMARK_PRESENTATION_STATUS_MARKED,
+            'presentationfeedback' => '<p>Teacher note.</p><p>'
+                . s(get_string('feedbackblockheading', 'checkmark_randomselect'))
+                . '</p><ul><li>Old legacy example</li></ul>',
+        ]);
+
+        $preview = new \checkmark_randomselect\preview([
+            [
+                'exampleid' => 2,
+                'examplename' => 'New example',
+                'userid' => (int) $student->id,
+                'userfullname' => fullname($student),
+            ],
+        ], []);
+        (new \checkmark_randomselect\applier(new \checkmark($checkmark->cmid)))->apply($preview);
+
+        $feedback = $DB->get_record('checkmark_feedbacks', [
+            'checkmarkid' => $checkmark->id,
+            'userid' => $student->id,
+        ], '*', MUST_EXIST);
+
+        $this->assertStringContainsString('Teacher note.', $feedback->presentationfeedback);
+        $this->assertStringContainsString('New example', $feedback->presentationfeedback);
+        $this->assertStringNotContainsString('Old legacy example', $feedback->presentationfeedback);
+        $this->assertSame(1, substr_count($feedback->presentationfeedback, 'checkmark-randomselect-feedback'));
+        $this->assertSame(
+            1,
+            substr_count($feedback->presentationfeedback, get_string('feedbackblockheading', 'checkmark_randomselect'))
+        );
     }
 
     /**

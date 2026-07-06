@@ -32,6 +32,9 @@ namespace checkmark_randomselect;
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 final class applier {
+    /** @var string CSS class for generated feedback blocks. */
+    private const FEEDBACK_BLOCK_CLASS = 'checkmark-randomselect-feedback';
+
     /**
      * Constructor.
      *
@@ -108,25 +111,57 @@ final class applier {
     }
 
     /**
-     * Append the generated random selection feedback block.
+     * Replace the generated random selection feedback block.
      *
      * @param string $existingfeedback Existing presentation feedback.
      * @param string[] $examplenames Assigned example names.
      * @return string
      */
     private function append_feedback_block(string $existingfeedback, array $examplenames): string {
+        $existingfeedback = $this->remove_existing_feedback_block($existingfeedback);
+
         $items = [];
         foreach ($examplenames as $examplename) {
             $items[] = \html_writer::tag('li', s($examplename));
         }
 
-        $block = \html_writer::tag('p', s(get_string('feedbackblockheading', 'checkmark_randomselect')))
+        $blockcontent = \html_writer::tag('p', s(get_string('feedbackblockheading', 'checkmark_randomselect')))
             . \html_writer::tag('ul', implode('', $items));
+        $block = \html_writer::tag('div', $blockcontent, [
+            'class' => self::FEEDBACK_BLOCK_CLASS,
+        ]);
 
         if (trim($existingfeedback) === '') {
             return $block;
         }
 
-        return $existingfeedback . "\n" . $block;
+        return rtrim($existingfeedback) . "\n" . $block;
+    }
+
+    /**
+     * Remove previous generated random selection feedback blocks.
+     *
+     * @param string $feedback Existing presentation feedback.
+     * @return string
+     */
+    private function remove_existing_feedback_block(string $feedback): string {
+        $class = preg_quote(self::FEEDBACK_BLOCK_CLASS, '~');
+        $updatedfeedback = preg_replace(
+            '~\s*<div\b(?=[^>]*\bclass=(["\'])(?:(?!\1).)*\b' . $class . '\b(?:(?!\1).)*\1)[^>]*>.*?</div>\s*~is',
+            "\n",
+            $feedback
+        );
+        if ($updatedfeedback !== null) {
+            $feedback = $updatedfeedback;
+        }
+
+        $heading = preg_quote(s(get_string('feedbackblockheading', 'checkmark_randomselect')), '~');
+        $updatedfeedback = preg_replace(
+            '~\s*<p\b[^>]*>\s*' . $heading . '\s*</p>\s*<ul\b[^>]*>.*?</ul>\s*~is',
+            "\n",
+            $feedback
+        );
+
+        return $updatedfeedback ?? $feedback;
     }
 }
