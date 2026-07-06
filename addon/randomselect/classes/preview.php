@@ -69,6 +69,7 @@ final class preview {
     /**
      * Return transient assignment data for hidden form state.
      *
+     * @param string $fingerprint Preview settings fingerprint.
      * @return string
      */
     public function encode(string $fingerprint = ''): string {
@@ -150,7 +151,8 @@ final class preview {
      * Export template data.
      *
      * @param int $courseid Course id for user profile links.
-     * @return array
+     * @param string $fingerprint Preview settings fingerprint.
+     * @return array Template data.
      */
     public function export_for_template(int $courseid, string $fingerprint = ''): array {
         $assignedcount = count($this->assignments);

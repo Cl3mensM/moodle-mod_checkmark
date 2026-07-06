@@ -47,6 +47,8 @@ final class filter {
      *
      * @param int $courseid Course id used to discover visible Checkmark activities.
      * @param bool $includeexistingpresentations Default for the existing presentation selector.
+     * @param string $checkmarkselection Selected Checkmark activity mode.
+     * @param int[] $selectedcheckmarkids Selected Checkmark activity ids.
      */
     public function __construct(
         /** @var int Course id used to discover visible Checkmark activities. */

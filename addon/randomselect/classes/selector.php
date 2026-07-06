@@ -280,9 +280,9 @@ final class selector {
     /**
      * Match examples to users while respecting per-user capacity.
      *
-     * @param example[] $examples Selected examples.
-     * @param array<int,int[]> $eligibleusersbyexample Eligible users per example.
-     * @return array<int,int> Example id to user id map.
+     * @param array $examples Selected examples.
+     * @param array $eligibleusersbyexample Eligible users per example.
+     * @return array Example id to user id map.
      */
     private function match_examples_to_users(array $examples, array $eligibleusersbyexample): array {
         $userids = [];
@@ -334,9 +334,9 @@ final class selector {
      * Assign an example to a matching slot with rematching.
      *
      * @param int $exampleid Example id.
-     * @param array<int,string[]> $slotidsbyexample Slot ids by example.
-     * @param array<string,int> $slottoexample Current slot to example map.
-     * @param array<string,bool> $seen Seen slot ids.
+     * @param array $slotidsbyexample Slot ids by example.
+     * @param array $slottoexample Current slot to example map.
+     * @param array $seen Seen slot ids.
      * @return bool
      */
     private function assign_example_to_slot(
@@ -366,8 +366,8 @@ final class selector {
     /**
      * Create preview object from example-to-user map.
      *
-     * @param example[] $examples Selected examples.
-     * @param array<int,int> $exampletouser Example id to user id map.
+     * @param array $examples Selected examples.
+     * @param array $exampletouser Example id to user id map.
      * @return preview
      */
     private function create_preview_from_example_user_map(array $examples, array $exampletouser): preview {

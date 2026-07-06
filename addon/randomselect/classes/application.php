@@ -45,6 +45,9 @@ final class application {
      * Constructor.
      *
      * @param example[] $examples Examples from the current Checkmark activity.
+     * @param string $exampleselection Selected example mode.
+     * @param int[] $selectedexampleids Selected example ids.
+     * @param int $examplesperstudent Selected number of examples per student.
      */
     public function __construct(
         /** @var example[] Examples from the current Checkmark activity. */
