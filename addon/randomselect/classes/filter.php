@@ -76,15 +76,30 @@ final class filter {
      * @return array
      */
     public function get_checkmark_options(): array {
+        global $DB;
+
         $options = [];
         $modinfo = get_fast_modinfo($this->courseid);
+        $cms = array_filter(
+            $modinfo->get_instances_of('checkmark'),
+            static fn($cm): bool => $cm->visible && $cm->uservisible
+        );
 
-        foreach ($modinfo->get_instances_of('checkmark') as $cm) {
-            if (!$cm->visible || !$cm->uservisible) {
+        if (empty($cms)) {
+            return [];
+        }
+
+        $checkmarks = $DB->get_records_list('checkmark', 'id', array_map(
+            static fn($cm): int => (int) $cm->instance,
+            $cms
+        ), '', 'id,presentationgrading');
+
+        foreach ($cms as $cm) {
+            $checkmarkid = (int) $cm->instance;
+            if (empty($checkmarks[$checkmarkid]->presentationgrading)) {
                 continue;
             }
 
-            $checkmarkid = (int) $cm->instance;
             $context = context_module::instance($cm->id);
             $name = format_string($cm->name, true, ['context' => $context]);
             $options[] = [

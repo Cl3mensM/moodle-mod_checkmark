@@ -20,9 +20,10 @@ Feature: Configure Checkmark random selection filters
     And the following "activities" exist:
       | activity  | course | idnumber | name                   | visible | presentationgrading | presentationgrade |
       | checkmark | C1     | CMMAIN   | Zulu Checkmark         | 1       | 1                   | 100               |
-      | checkmark | C1     | CMALPHA  | Alpha Checkmark        | 1       | 0                   | 0                 |
-      | checkmark | C1     | CMHIDDEN | Hidden Checkmark       | 0       | 0                   | 0                 |
-      | checkmark | C2     | CMOTHER  | Other Course Checkmark | 1       | 0                   | 0                 |
+      | checkmark | C1     | CMALPHA  | Alpha Checkmark        | 1       | 1                   | 100               |
+      | checkmark | C1     | CMNOPRES | No Presentation        | 1       | 0                   | 0                 |
+      | checkmark | C1     | CMHIDDEN | Hidden Checkmark       | 0       | 1                   | 100               |
+      | checkmark | C2     | CMOTHER  | Other Course Checkmark | 1       | 1                   | 100               |
     When I am on the "CMMAIN" Activity page logged in as teacher1
     And I follow "Start random selection for presentation"
     And I click on "//button[@aria-controls='checkmark-randomselect-filtercriteria']" "xpath_element"
@@ -30,6 +31,7 @@ Feature: Configure Checkmark random selection filters
     And I should see "Include participants with existing presentation" in the "#checkmark-randomselect-filtercriteria" "css_element"
     And I should see "Alpha Checkmark" in the "#checkmark-randomselect-filtercriteria" "css_element"
     And I should see "Zulu Checkmark" in the "#checkmark-randomselect-filtercriteria" "css_element"
+    And I should not see "No Presentation" in the "#checkmark-randomselect-filtercriteria" "css_element"
     And I should not see "Hidden Checkmark" in the "#checkmark-randomselect-filtercriteria" "css_element"
     And I should not see "Other Course Checkmark" in the "#checkmark-randomselect-filtercriteria" "css_element"
     And the field "checkmark-randomselect-checkmark-selection-all" matches value "1"

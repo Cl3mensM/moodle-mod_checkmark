@@ -316,19 +316,32 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         $zulu = $generator->create_module('checkmark', [
             'course' => $course->id,
             'name' => 'Zulu Checkmark',
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
         ]);
         $alpha = $generator->create_module('checkmark', [
             'course' => $course->id,
             'name' => 'Alpha Checkmark',
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+        ]);
+        $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'name' => 'No Presentation Checkmark',
+            'presentationgrading' => 0,
         ]);
         $generator->create_module('checkmark', [
             'course' => $course->id,
             'name' => 'Hidden Checkmark',
             'visible' => 0,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
         ]);
         $generator->create_module('checkmark', [
             'course' => $othercourse->id,
             'name' => 'Other Course Checkmark',
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
         ]);
 
         set_config(
@@ -343,6 +356,7 @@ final class checkmark_subplugin_test extends \advanced_testcase {
 
         $this->assertSame(['Alpha Checkmark', 'Zulu Checkmark'], array_column($options, 'name'));
         $this->assertSame([(int) $alpha->id, (int) $zulu->id], array_column($options, 'id'));
+        $this->assertNotContains('No Presentation Checkmark', array_column($options, 'name'));
         $this->assertTrue($options[0]['checked']);
         $this->assertTrue($options[1]['checked']);
 
