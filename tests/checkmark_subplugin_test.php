@@ -504,6 +504,8 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         $students = [
             'existing' => $generator->create_user(),
             'eligible' => $generator->create_user(),
+            'teacherforced' => $generator->create_user(),
+            'teacherunchecked' => $generator->create_user(),
             'unchecked' => $generator->create_user(),
         ];
 
@@ -530,6 +532,27 @@ final class checkmark_subplugin_test extends \advanced_testcase {
             'userid' => $students['eligible']->id,
             'example2' => 1,
         ]);
+        $plugingenerator->create_submission([
+            'checkmark' => $checkmark->id,
+            'userid' => $students['teacherforced']->id,
+        ]);
+        $this->set_example_state(
+            (int) $checkmark->id,
+            (int) $students['teacherforced']->id,
+            $exampleids[0],
+            \mod_checkmark\example::UNCHECKED_OVERWRITTEN
+        );
+        $plugingenerator->create_submission([
+            'checkmark' => $checkmark->id,
+            'userid' => $students['teacherunchecked']->id,
+            'example1' => 1,
+        ]);
+        $this->set_example_state(
+            (int) $checkmark->id,
+            (int) $students['teacherunchecked']->id,
+            $exampleids[0],
+            \mod_checkmark\example::CHECKED_OVERWRITTEN
+        );
         $plugingenerator->create_submission([
             'checkmark' => $checkmark->id,
             'userid' => $students['unchecked']->id,
@@ -694,5 +717,27 @@ final class checkmark_subplugin_test extends \advanced_testcase {
      */
     private function get_example_ids(object $checkmark): array {
         return array_keys(\checkmark::get_examples_static($checkmark->id, $checkmark->exampleprefix));
+    }
+
+    /**
+     * Set one stored example state for a user submission.
+     *
+     * @param int $checkmarkid Checkmark activity id.
+     * @param int $userid User id.
+     * @param int $exampleid Example id.
+     * @param int $state Example state.
+     */
+    private function set_example_state(int $checkmarkid, int $userid, int $exampleid, int $state): void {
+        global $DB;
+
+        $submissionid = $DB->get_field('checkmark_submissions', 'id', [
+            'checkmarkid' => $checkmarkid,
+            'userid' => $userid,
+        ], MUST_EXIST);
+
+        $DB->set_field('checkmark_checks', 'state', $state, [
+            'submissionid' => $submissionid,
+            'exampleid' => $exampleid,
+        ]);
     }
 }
