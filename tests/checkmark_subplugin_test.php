@@ -592,6 +592,72 @@ final class checkmark_subplugin_test extends \advanced_testcase {
 
         $data = $preview->export_for_template((int) $course->id);
         $this->assertFalse($data['hasunassigned']);
+        $this->assertFalse($data['hascapacitywarning']);
+    }
+
+    /**
+     * Random selection warns when the configured count cannot be reached for every eligible student.
+     */
+    public function test_randomselect_preview_warns_about_unmet_examples_per_student_count(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+        $plugingenerator = $generator->get_plugin_generator('mod_checkmark');
+        $course = $generator->create_course();
+        $students = [
+            $generator->create_user(),
+            $generator->create_user(),
+            $generator->create_user(),
+        ];
+
+        foreach ($students as $student) {
+            $generator->enrol_user($student->id, $course->id, 'student');
+        }
+
+        $checkmark = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+            'examplecount' => 10,
+            'grade' => 100,
+        ]);
+        $exampleids = $this->get_example_ids($checkmark);
+
+        foreach ($students as $student) {
+            $submission = [
+                'checkmark' => $checkmark->id,
+                'userid' => $student->id,
+            ];
+            for ($i = 1; $i <= 10; $i++) {
+                $submission['example' . $i] = 1;
+            }
+            $plugingenerator->create_submission($submission);
+        }
+
+        $selector = new \checkmark_randomselect\selector(
+            get_coursemodule_from_id('checkmark', $checkmark->cmid),
+            $checkmark,
+            \context_module::instance($checkmark->cmid),
+            [$checkmark->id],
+            true,
+            $exampleids,
+            5,
+            static function (array &$items): void {
+                // Keep test output deterministic.
+            }
+        );
+
+        $preview = $selector->create_preview();
+        $data = $preview->export_for_template((int) $course->id);
+
+        $this->assertCount(10, $preview->get_assignments());
+        $this->assertFalse($data['hasunassigned']);
+        $this->assertTrue($data['hascapacitywarning']);
+        $this->assertSame(
+            get_string('previewcapacitywarning', 'checkmark_randomselect', 5),
+            $data['capacitywarning']
+        );
     }
 
     /**

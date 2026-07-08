@@ -128,6 +128,7 @@ final class page implements renderable, templatable {
             'haspreview' => false,
             'hasassignments' => false,
             'hasunassigned' => false,
+            'hascapacitywarning' => false,
             'previewdata' => '',
             'nopreviewtitle' => get_string('nopreviewtitle', 'checkmark_randomselect'),
             'nopreviewbody' => get_string('nopreviewbody', 'checkmark_randomselect'),

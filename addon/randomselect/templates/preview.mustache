@@ -23,6 +23,8 @@
     * haspreview - Whether a preview exists.
     * hasassignments - Whether the preview contains assignments.
     * hasunassigned - Whether the preview contains unassigned examples.
+    * hascapacitywarning - Whether the configured per-student count could not be reached.
+    * capacitywarning - Warning shown when the configured per-student count could not be reached.
     * nopreviewtitle - Title for the no-preview notice.
     * nopreviewbody - Body for the no-preview notice.
     * loadinglabel - Label for the loading preview state.
@@ -37,6 +39,7 @@
         "haspreview": true,
         "hasassignments": true,
         "hasunassigned": false,
+        "hascapacitywarning": false,
         "loadinglabel": "Preview is being created",
         "assignmentintro": "1 Example(s) can be pre-selected for 1 students:",
         "assignments": [
@@ -67,6 +70,16 @@
 {{/haspreview}}
 
 {{#haspreview}}
+    {{#hascapacitywarning}}
+        <div class="alert alert-warning d-flex align-items-start mb-4" role="status">
+            <span class="mr-3" aria-hidden="true">
+                <i class="icon fa fa-circle-exclamation fa-fw fa-2x"></i>
+            </span>
+            <span class="sr-only">{{#str}}warning{{/str}}</span>
+            <div>{{capacitywarning}}</div>
+        </div>
+    {{/hascapacitywarning}}
+
     {{#hasunassigned}}
         <div class="alert alert-warning d-flex align-items-start mb-4" role="status">
             <span class="mr-3" aria-hidden="true">

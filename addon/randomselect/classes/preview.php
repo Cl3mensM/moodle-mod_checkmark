@@ -39,12 +39,15 @@ final class preview {
      *
      * @param array $assignments Assigned examples with exampleid, examplename, userid and userfullname.
      * @param array $unassigned Unassigned examples with exampleid and examplename.
+     * @param int|null $unmetexamplesperstudent Configured per-student count that could not be reached.
      */
     public function __construct(
         /** @var array Assigned examples. */
         private readonly array $assignments,
         /** @var array Unassigned examples. */
         private readonly array $unassigned,
+        /** @var int|null Configured per-student count that could not be reached. */
+        private readonly ?int $unmetexamplesperstudent = null,
     ) {
     }
 
@@ -163,6 +166,14 @@ final class preview {
             'haspreview' => true,
             'hasassignments' => $this->has_assignments(),
             'hasunassigned' => !empty($this->unassigned),
+            'hascapacitywarning' => $this->unmetexamplesperstudent !== null,
+            'capacitywarning' => $this->unmetexamplesperstudent === null
+                ? ''
+                : get_string(
+                    'previewcapacitywarning',
+                    'checkmark_randomselect',
+                    $this->unmetexamplesperstudent
+                ),
             'previewdata' => $this->encode($fingerprint),
             'loadinglabel' => get_string('previewloading', 'checkmark_randomselect'),
             'unassignedintro' => get_string('previewunassignedintro', 'checkmark_randomselect', (object) [

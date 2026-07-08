@@ -51,6 +51,7 @@ $string['pluginname'] = 'Random selection';
 $string['preview'] = 'Preview';
 $string['preview_help'] = 'Here you can see a suggestion for the random selection of students for examples of the current checkmark activity. You can create a new preview/ new proposal at any time and then apply the proposed allocation.';
 $string['previewassignmentintro'] = '{$a->examplecount} Example(s) can be pre-selected for {$a->studentcount} students:';
+$string['previewcapacitywarning'] = 'The configured {$a} examples per student cannot be assigned to every eligible student due to the current settings (not enough eligible examples available).';
 $string['previewloading'] = 'Preview is being created';
 $string['previewnextsteps'] = 'You can accept the current selection or generate a new preview.';
 $string['previewunassignedintro'] = '{$a->count} Example(s) cannot be pre-selected for students due to the current settings ({$a->reason}):';

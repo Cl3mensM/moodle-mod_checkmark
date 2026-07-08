@@ -82,7 +82,11 @@ final class selector {
         $eligibleusersbyexample = $this->get_eligible_userids_by_example($examples);
         $exampletouser = $this->match_examples_to_users($examples, $eligibleusersbyexample);
 
-        return $this->create_preview_from_example_user_map($examples, $exampletouser);
+        return $this->create_preview_from_example_user_map(
+            $examples,
+            $exampletouser,
+            $eligibleusersbyexample
+        );
     }
 
     /**
@@ -116,7 +120,11 @@ final class selector {
             $exampletouser[$exampleid] = $userid;
         }
 
-        return $this->create_preview_from_example_user_map($examples, $exampletouser);
+        return $this->create_preview_from_example_user_map(
+            $examples,
+            $exampletouser,
+            $eligibleusersbyexample
+        );
     }
 
     /**
@@ -368,9 +376,14 @@ final class selector {
      *
      * @param array $examples Selected examples.
      * @param array $exampletouser Example id to user id map.
+     * @param array $eligibleusersbyexample Eligible users per example.
      * @return preview
      */
-    private function create_preview_from_example_user_map(array $examples, array $exampletouser): preview {
+    private function create_preview_from_example_user_map(
+        array $examples,
+        array $exampletouser,
+        array $eligibleusersbyexample
+    ): preview {
         $users = $this->get_users(array_values($exampletouser));
         $assignments = [];
         $unassigned = [];
@@ -393,7 +406,43 @@ final class selector {
             ];
         }
 
-        return new preview($assignments, $unassigned);
+        $unmetexamplesperstudent = $this->has_unmet_per_student_count(
+            $exampletouser,
+            $eligibleusersbyexample
+        ) ? $this->examplesperstudent : null;
+
+        return new preview($assignments, $unassigned, $unmetexamplesperstudent);
+    }
+
+    /**
+     * Return whether an eligible user received fewer examples than configured.
+     *
+     * @param array $exampletouser Example id to user id map.
+     * @param array $eligibleusersbyexample Eligible users per example.
+     * @return bool
+     */
+    private function has_unmet_per_student_count(
+        array $exampletouser,
+        array $eligibleusersbyexample
+    ): bool {
+        $eligibleuserids = [];
+        foreach ($eligibleusersbyexample as $userids) {
+            $eligibleuserids = array_merge($eligibleuserids, $userids);
+        }
+        $eligibleuserids = array_unique($eligibleuserids);
+
+        if (empty($eligibleuserids)) {
+            return false;
+        }
+
+        $assignmentcounts = array_count_values($exampletouser);
+        foreach ($eligibleuserids as $userid) {
+            if (($assignmentcounts[$userid] ?? 0) < $this->examplesperstudent) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     /**
