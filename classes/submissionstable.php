@@ -2272,14 +2272,13 @@ class submissionstable extends \table_sql {
                 ]);
             }
         } else if ($this->quickgrade && ! $this->use_no_html()) {
-            $feedbackclean = self::convert_html_to_text($values->presentationfeedback);
-            if (is_null($feedbackclean)) {
-                $feedbackclean = '';
-            }
+            $feedbackclean = empty($values->presentationfeedback)
+                ? ''
+                : trim(html_to_text($values->presentationfeedback, 0, false));
             $inputarr = [
                 'type' => 'hidden',
                 'name' => 'oldpresentationfeedback[' . $values->id . ']',
-                'value' => trim(str_replace('<br />', '<br />\n', $feedbackclean)),
+                'value' => $feedbackclean,
             ];
             $oldfeedback = \html_writer::empty_tag('input', $inputarr);
             $attr = [
@@ -2289,7 +2288,7 @@ class submissionstable extends \table_sql {
                 'rows' => 2,
                 'cols' => 20,
             ];
-            $content = \html_writer::tag('textarea', strip_tags(trim(str_replace('<br />', '<br />\n', $feedbackclean))), $attr);
+            $content = \html_writer::tag('textarea', s($feedbackclean), $attr);
             return \html_writer::tag('div', $content . $oldfeedback, [
                 'id' => 'pcom' . $values->id,
             ]);
