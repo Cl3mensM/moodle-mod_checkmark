@@ -759,6 +759,7 @@ class checkmark {
         $attendantcount = -1;
         $absencecount = -1;
         $needattendanceentrycount = -1;
+        $presentationmarkedcount = -1;
         $presentationgradingcount = -1;
         if ($this->checkmark->trackattendance) {
             $attendantcount = submissionstable::count_userids(
@@ -781,6 +782,12 @@ class checkmark {
             );
         }
         if ($this->checkmark->presentationgrading) {
+            $presentationmarkedcount = submissionstable::count_userids(
+                $this->context,
+                $this->checkmark->id,
+                $currentgroup,
+                self::FILTER_PRESENTATION_MARKED
+            );
             $presentationgradingcount = submissionstable::count_userids(
                 $this->context,
                 $this->checkmark->id,
@@ -803,7 +810,8 @@ class checkmark {
             $attendantcount,
             $absencecount,
             $needattendanceentrycount,
-            $presentationgradingcount
+            $presentationgradingcount,
+            $presentationmarkedcount
         );
         return $summary;
     }

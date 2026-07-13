@@ -297,11 +297,35 @@ class mod_checkmark_renderer extends plugin_renderer_base {
             $this->print_attandance_info($t, $summary, $cm);
         }
 
-        // Show count of presentationgradings if presenationgrading is active.
-        if ($summary->presentationgradingcount > 0) {
-            $cell1content = get_string('presentationgradingcount', 'checkmark');
-            $cell2content = $summary->presentationgradingcount;
-            $this->add_table_row_tuple($t, $cell1content, $cell2content);
+        // Show presentation counts if presentation grading is active.
+        if ($summary->presentationgradingcount >= 0) {
+            $currentgroup = groups_get_activity_group($cm);
+            $presentationrows = [
+                [
+                    'label' => get_string('presentationmarkedcount', 'checkmark'),
+                    'count' => $summary->presentationmarkedcount,
+                    'filter' => \checkmark::FILTER_PRESENTATION_MARKED,
+                ],
+                [
+                    'label' => get_string('presentationgradingcount', 'checkmark'),
+                    'count' => $summary->presentationgradingcount,
+                    'filter' => \checkmark::FILTER_PRESENTATIONGRADING,
+                ],
+            ];
+
+            foreach ($presentationrows as $presentationrow) {
+                $urlparams = [
+                    'id' => $cm->id,
+                    'updatepref' => 1,
+                    'filter' => $presentationrow['filter'],
+                ];
+                if ($currentgroup !== false) {
+                    $urlparams['group'] = $currentgroup;
+                }
+                $url = new moodle_url('/mod/checkmark/submissions.php', $urlparams);
+                $link = html_writer::link($url, $presentationrow['count'], ['class' => 'link']);
+                $this->add_table_row_tuple($t, $presentationrow['label'], $link);
+            }
         }
 
         // All done - write the table.
