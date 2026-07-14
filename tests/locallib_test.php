@@ -796,6 +796,138 @@ final class locallib_test extends \advanced_testcase {
     }
 
     /**
+     * Ensure the presentation bulk action marks only selected users without changing grading data.
+     */
+    public function test_bulk_mark_presentations_updates_only_selected_users_and_status(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $selectedwithexistingfeedback = $generator->create_user();
+        $selectedwithoutfeedback = $generator->create_user();
+        $unselected = $generator->create_user();
+        foreach ([$selectedwithexistingfeedback, $selectedwithoutfeedback, $unselected] as $student) {
+            $generator->enrol_user($student->id, $course->id, 'student');
+        }
+
+        $checkmarkrecord = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'trackattendance' => 1,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+            'presentationgradebook' => 0,
+            'grade' => 100,
+        ]);
+        $instance = new testable_checkmark($checkmarkrecord->cmid);
+
+        $selectedfeedback = $instance->prepare_new_feedback($selectedwithexistingfeedback->id);
+        $selectedfeedback->grade = 75;
+        $selectedfeedback->feedback = 'Keep regular feedback';
+        $selectedfeedback->attendance = 1;
+        $selectedfeedback->presentationstatus = CHECKMARK_PRESENTATION_STATUS_YES;
+        $selectedfeedback->presentationgrade = 80;
+        $selectedfeedback->presentationfeedback = 'Keep presentation feedback';
+        $selectedfeedback->presentationformat = FORMAT_HTML;
+        $DB->update_record('checkmark_feedbacks', $selectedfeedback);
+
+        $unselectedfeedback = $instance->prepare_new_feedback($unselected->id);
+        $unselectedfeedback->presentationstatus = CHECKMARK_PRESENTATION_STATUS_NO;
+        $unselectedfeedback->presentationfeedback = 'Unselected feedback';
+        $DB->update_record('checkmark_feedbacks', $unselectedfeedback);
+
+        $submissioncount = $DB->count_records('checkmark_submissions', ['checkmarkid' => $checkmarkrecord->id]);
+        $checkcount = $DB->count_records('checkmark_checks');
+        $oldpost = $_POST;
+        $oldget = $_GET;
+        $_GET = [];
+        $_POST = [
+            'sesskey' => sesskey(),
+            'bulk' => 1,
+            'bulkaction' => 'markpresentation',
+            'selected' => [
+                $selectedwithexistingfeedback->id,
+                $selectedwithoutfeedback->id,
+            ],
+            'mailinfo' => 0,
+        ];
+
+        try {
+            $instance->submissions('bulk');
+        } finally {
+            $_POST = $oldpost;
+            $_GET = $oldget;
+        }
+
+        $selectedfeedback = $DB->get_record(
+            'checkmark_feedbacks',
+            ['checkmarkid' => $checkmarkrecord->id, 'userid' => $selectedwithexistingfeedback->id],
+            '*',
+            MUST_EXIST
+        );
+        $newfeedback = $DB->get_record(
+            'checkmark_feedbacks',
+            ['checkmarkid' => $checkmarkrecord->id, 'userid' => $selectedwithoutfeedback->id],
+            '*',
+            MUST_EXIST
+        );
+        $unselectedfeedback = $DB->get_record('checkmark_feedbacks', ['id' => $unselectedfeedback->id], '*', MUST_EXIST);
+
+        $this->assertEquals(CHECKMARK_PRESENTATION_STATUS_MARKED, $selectedfeedback->presentationstatus);
+        $this->assertEquals(75, $selectedfeedback->grade);
+        $this->assertSame('Keep regular feedback', $selectedfeedback->feedback);
+        $this->assertEquals(1, $selectedfeedback->attendance);
+        $this->assertEquals(80, $selectedfeedback->presentationgrade);
+        $this->assertSame('Keep presentation feedback', $selectedfeedback->presentationfeedback);
+        $this->assertEquals(FORMAT_HTML, $selectedfeedback->presentationformat);
+        $this->assertEquals(CHECKMARK_PRESENTATION_STATUS_MARKED, $newfeedback->presentationstatus);
+        $this->assertNull($newfeedback->presentationgrade);
+        $this->assertNull($newfeedback->presentationfeedback);
+        $this->assertEquals(CHECKMARK_PRESENTATION_STATUS_NO, $unselectedfeedback->presentationstatus);
+        $this->assertSame('Unselected feedback', $unselectedfeedback->presentationfeedback);
+        $this->assertSame(
+            $submissioncount,
+            $DB->count_records('checkmark_submissions', ['checkmarkid' => $checkmarkrecord->id])
+        );
+        $this->assertSame($checkcount, $DB->count_records('checkmark_checks'));
+        $this->assertStringContainsString(
+            get_string('markforpresentationsuccess', 'checkmark', 2),
+            $instance->lastsubmissionmessage
+        );
+    }
+
+    /**
+     * Ensure users cannot be marked when presentation grading is disabled.
+     */
+    public function test_bulk_mark_presentations_requires_presentation_grading(): void {
+        global $DB;
+
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+        $course = $generator->create_course();
+        $student = $generator->create_user();
+        $generator->enrol_user($student->id, $course->id, 'student');
+        $checkmarkrecord = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 0,
+        ]);
+        $instance = new testable_checkmark($checkmarkrecord->cmid);
+
+        $result = $instance->mark_presentations([$student->id]);
+
+        $this->assertSame(GRADE_UPDATE_FAILED, $result['status']);
+        $this->assertSame(0, $result['updated']);
+        $this->assertFalse($DB->record_exists('checkmark_feedbacks', [
+            'checkmarkid' => $checkmarkrecord->id,
+            'userid' => $student->id,
+        ]));
+    }
+
+    /**
      * Assert two user id lists contain the same ids.
      *
      * @param int[] $expected Expected user ids.

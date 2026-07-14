@@ -31,8 +31,32 @@ Feature: Bulk actions are grouped in the submissions dropdown
     And "select[name='bulkaction'] optgroup[label='Attendance'] option[value='setabsent']" "css_element" should exist
     And "select[name='bulkaction'] optgroup[label='Attendance'] option[value='setattendantandgrade']" "css_element" should exist
     And "select[name='bulkaction'] optgroup[label='Attendance'] option[value='setabsentandgrade']" "css_element" should exist
+    And "select[name='bulkaction'] optgroup[label='Presentation'] option[value='markpresentation']" "css_element" should exist
     And "select[name='bulkaction'] optgroup[label='Presentation'] option[value='removepresentationgrade']" "css_element" should exist
+    And "//select[@name='bulkaction']/optgroup[@label='Presentation']/option[@value='markpresentation'][following-sibling::option[1][@value='removepresentationgrade']]" "xpath_element" should exist
     And "select[name='bulkaction'] optgroup[label='Grading'] option[value='grade'][selected]" "css_element" should exist
     And "select[name='bulkaction'] optgroup[label='Grading'] option[value='removegrade']" "css_element" should exist
     And "//div[contains(concat(' ', normalize-space(@class), ' '), ' fitem ') and contains(concat(' ', normalize-space(@class), ' '), ' form-select ') and .//select[@name='bulkaction']]" "xpath_element" should not exist
     And "//select[@name='bulkaction']//option[normalize-space(.)='---']" "xpath_element" should not exist
+
+  @javascript
+  Scenario: Presentation bulk actions are hidden when presentation grading is disabled
+    Given the following "courses" exist:
+      | fullname | shortname | category |
+      | Course 1 | C1        | 0        |
+    And the following "users" exist:
+      | username | firstname | lastname | email                |
+      | teacher1 | Teacher   | 1        | teacher1@example.com |
+      | student1 | Student   | 1        | student1@example.com |
+    And the following "course enrolments" exist:
+      | user     | course | role           |
+      | teacher1 | C1     | editingteacher |
+      | student1 | C1     | student        |
+    And the following "activities" exist:
+      | activity  | course | idnumber | name        | intro         | presentationgrading |
+      | checkmark | C1     | CM1      | Checkmark 1 | Description 1 | 0                   |
+    When I am on the "CM1" Activity page logged in as teacher1
+    And I navigate to "Submissions" in current page administration
+    Then "select[name='bulkaction'] option[value='markpresentation']" "css_element" should not exist
+    And "select[name='bulkaction'] option[value='removepresentationgrade']" "css_element" should not exist
+    And "select[name='bulkaction'] optgroup[label='Presentation']" "css_element" should not exist

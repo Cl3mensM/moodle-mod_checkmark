@@ -2433,6 +2433,34 @@ class checkmark {
                         }
                     }
 
+                    // Bulk mark users for presentation.
+                    if ($bulkaction === 'markpresentation') {
+                        if (has_capability('mod/checkmark:gradepresentation', $this->context)) {
+                            $result = $this->mark_presentations($selected);
+                            if ($message !== '') {
+                                $message .= html_writer::empty_tag('br');
+                            }
+                            if ($result['status'] == GRADE_UPDATE_OK) {
+                                if ($result['updated'] == 1) {
+                                    $string = 'markforpresentationonesuccess';
+                                } else {
+                                    $string = 'markforpresentationsuccess';
+                                }
+                                $message .= $OUTPUT->notification(
+                                    get_string($string, 'checkmark', $result['updated']),
+                                    'notifysuccess'
+                                );
+                            } else {
+                                $message .= $OUTPUT->notification(
+                                    get_string('markforpresentationfailed', 'checkmark'),
+                                    'notifyproblem'
+                                );
+                            }
+                        } else {
+                            throw new moodle_exception('markforpresentationerror', 'checkmark');
+                        }
+                    }
+
                     // Bulk remove grades.
                     if (in_array($bulkaction, ['removegrade'])) {
                         if (has_capability('mod/checkmark:grade', context_module::instance($this->cm->id))) {
@@ -3429,6 +3457,13 @@ class checkmark {
             }
 
             if ($this->checkmark->presentationgrading) {
+                if (has_capability('mod/checkmark:gradepresentation', $this->context)) {
+                    $addbulkaction(
+                        $presentationgroup,
+                        get_string('markforpresentation', 'checkmark'),
+                        'markpresentation'
+                    );
+                }
                 $addbulkaction(
                     $presentationgroup,
                     get_string('remove_presentation_grade', 'checkmark'),
@@ -5196,6 +5231,57 @@ class checkmark {
             }
         }
         return $record;
+    }
+
+    /**
+     * Mark selected users for presentation.
+     *
+     * Only the presentation status and its modification metadata are changed. Existing grades and feedback are preserved.
+     *
+     * @param int[] $selected Selected user ids.
+     * @return array Result containing status and number of updated users.
+     * @throws dml_exception
+     */
+    public function mark_presentations(array $selected): array {
+        global $DB, $USER;
+
+        $result = ['status' => GRADE_UPDATE_FAILED, 'updated' => 0];
+        if (!$this->checkmark->presentationgrading || empty($selected)) {
+            return $result;
+        }
+
+        $selected = array_values(array_filter(
+            array_unique(array_map('intval', $selected)),
+            static fn(int $userid): bool => $userid > 0
+        ));
+        if (empty($selected)) {
+            return $result;
+        }
+
+        [$useridsql, $params] = $DB->get_in_or_equal($selected, SQL_PARAMS_NAMED, 'user');
+        $users = $DB->get_records_select('user', 'deleted = 0 AND id ' . $useridsql, $params, '', 'id');
+        if (empty($users)) {
+            return $result;
+        }
+
+        $now = time();
+        foreach ($users as $user) {
+            $feedback = $this->prepare_new_feedback($user->id);
+            $feedback->presentationstatus = CHECKMARK_PRESENTATION_STATUS_MARKED;
+            $feedback->graderid = $USER->id;
+            $feedback->timemodified = $now;
+            $feedback->presentationtimemodified = $now;
+            $DB->update_record('checkmark_feedbacks', $feedback);
+            $result['updated']++;
+
+            \mod_checkmark\event\grade_updated::manual($this->cm, [
+                'userid' => $feedback->userid,
+                'feedbackid' => $feedback->id,
+            ])->trigger();
+        }
+
+        $result['status'] = GRADE_UPDATE_OK;
+        return $result;
     }
 
     /**
