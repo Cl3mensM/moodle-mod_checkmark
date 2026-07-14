@@ -56,14 +56,15 @@ if ($returnurl !== '') {
 }
 
 $renderer = $PAGE->get_renderer('core');
-$defaultfilter = \checkmark_randomselect\filter::default_for_course((int) $course->id);
+$defaultfilter = \checkmark_randomselect\filter::default_for_course((int) $course->id, (int) $checkmark->id);
 $defaultapplication = \checkmark_randomselect\application::default_for_checkmark($checkmark);
 $formdata = \checkmark_randomselect\formdata::from_request($defaultfilter, $defaultapplication);
 $filter = new \checkmark_randomselect\filter(
     (int) $course->id,
     $formdata->includeexistingpresentations,
     $formdata->checkmarkselection,
-    $formdata->selectedcheckmarkids
+    $formdata->selectedcheckmarkids,
+    (int) $checkmark->id
 );
 $application = new \checkmark_randomselect\application(
     $defaultapplication->get_examples(),

@@ -31,6 +31,8 @@ Feature: Configure Checkmark random selection filters
     And I should see "Include participants with existing presentation" in the "#checkmark-randomselect-filtercriteria" "css_element"
     And I should see "Alpha Checkmark" in the "#checkmark-randomselect-filtercriteria" "css_element"
     And I should see "Zulu Checkmark" in the "#checkmark-randomselect-filtercriteria" "css_element"
+    And I should see "Current activity" in the "//label[contains(., 'Zulu Checkmark')]" "xpath_element"
+    And I should not see "Current activity" in the "//label[contains(., 'Alpha Checkmark')]" "xpath_element"
     And I should not see "No Presentation" in the "#checkmark-randomselect-filtercriteria" "css_element"
     And I should not see "Hidden Checkmark" in the "#checkmark-randomselect-filtercriteria" "css_element"
     And I should not see "Other Course Checkmark" in the "#checkmark-randomselect-filtercriteria" "css_element"

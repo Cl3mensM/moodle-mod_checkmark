@@ -32,6 +32,7 @@
     * alllabel - Label for All controls.
     * selectedlabel - Label for the Selected radio.
     * nonelabel - Label for the None action.
+    * currentactivitylabel - Label identifying the current Checkmark activity.
     * checkmarkoptions - Visible Checkmark activity options.
     * hascheckmarkoptions - Whether options are available.
     * nooptionsmessage - Message shown when no options are available.
@@ -54,11 +55,13 @@
         "alllabel": "All",
         "selectedlabel": "Selected",
         "nonelabel": "None",
+        "currentactivitylabel": "Current activity",
         "checkmarkoptions": [
             {
                 "id": 12,
                 "name": "Checkmark 1",
                 "inputid": "checkmark-randomselect-checkmark-12",
+                "iscurrent": true,
                 "checked": true
             }
         ],
@@ -110,7 +113,15 @@
                                 <input class="form-check-input" type="checkbox" name="checkmarkids[]"
                                        id="{{inputid}}" value="{{id}}" {{#checked}}checked{{/checked}}
                                        disabled data-region="checkmark-randomselect-checkmark-option">
-                                <label class="form-check-label" for="{{inputid}}">{{name}}</label>
+                                <label class="form-check-label" for="{{inputid}}">
+                                    {{#iscurrent}}<strong>{{name}}</strong>{{/iscurrent}}
+                                    {{^iscurrent}}{{name}}{{/iscurrent}}
+                                    {{#iscurrent}}
+                                        <span class="badge rounded-pill text-bg-secondary fw-normal ms-2">
+                                            {{currentactivitylabel}}
+                                        </span>
+                                    {{/iscurrent}}
+                                </label>
                             </div>
                         {{/checkmarkoptions}}
                     {{/hascheckmarkoptions}}

@@ -351,18 +351,21 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         );
         $this->setUser($teacher);
 
-        $filter = \checkmark_randomselect\filter::default_for_course((int) $course->id);
+        $filter = \checkmark_randomselect\filter::default_for_course((int) $course->id, (int) $zulu->id);
         $options = $filter->get_checkmark_options();
 
         $this->assertSame(['Alpha Checkmark', 'Zulu Checkmark'], array_column($options, 'name'));
         $this->assertSame([(int) $alpha->id, (int) $zulu->id], array_column($options, 'id'));
         $this->assertNotContains('No Presentation Checkmark', array_column($options, 'name'));
+        $this->assertSame([false, true], array_column($options, 'iscurrent'));
         $this->assertTrue($options[0]['checked']);
         $this->assertTrue($options[1]['checked']);
 
-        $data = $filter->export_for_template($PAGE->get_renderer('core'));
+        $renderer = $PAGE->get_renderer('core');
+        $data = $filter->export_for_template($renderer);
 
         $this->assertSame(get_string('coursecheckmarks', 'checkmark_randomselect'), $data['coursecheckmarkslabel']);
+        $this->assertSame(get_string('currentactivity', 'checkmark_randomselect'), $data['currentactivitylabel']);
         $this->assertNotEmpty($data['coursecheckmarkshelpicon']);
         $this->assertSame(\checkmark_randomselect\filter::CHECKMARK_SELECTION_ALL, $data['checkmarkselectionall']);
         $this->assertSame(
@@ -378,6 +381,12 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         $this->assertTrue($data['includeexistingpresentationsoptions'][0]['selected']);
         $this->assertSame(0, $data['includeexistingpresentationsoptions'][1]['value']);
         $this->assertFalse($data['includeexistingpresentationsoptions'][1]['selected']);
+
+        $html = $renderer->render_from_template('checkmark_randomselect/filtercriteria', $data);
+        $this->assertSame(1, substr_count($html, get_string('currentactivity', 'checkmark_randomselect')));
+        $this->assertStringContainsString('badge rounded-pill text-bg-secondary', $html);
+        $this->assertStringContainsString('<strong>Zulu Checkmark</strong>', $html);
+        $this->assertStringNotContainsString('<strong>Alpha Checkmark</strong>', $html);
     }
 
     /**

@@ -49,6 +49,7 @@ final class filter {
      * @param bool $includeexistingpresentations Default for the existing presentation selector.
      * @param string $checkmarkselection Selected Checkmark activity mode.
      * @param int[] $selectedcheckmarkids Selected Checkmark activity ids.
+     * @param int|null $currentcheckmarkid Current Checkmark activity id.
      */
     public function __construct(
         /** @var int Course id used to discover visible Checkmark activities. */
@@ -59,6 +60,8 @@ final class filter {
         private readonly string $checkmarkselection = self::CHECKMARK_SELECTION_ALL,
         /** @var int[] Selected Checkmark activity ids. */
         private readonly array $selectedcheckmarkids = [],
+        /** @var int|null Current Checkmark activity id. */
+        private readonly ?int $currentcheckmarkid = null,
     ) {
     }
 
@@ -66,10 +69,17 @@ final class filter {
      * Create default filter criteria for a course.
      *
      * @param int $courseid Course id.
+     * @param int|null $currentcheckmarkid Current Checkmark activity id.
      * @return self
      */
-    public static function default_for_course(int $courseid): self {
-        return new self($courseid, settings::include_existing_presentations_by_default());
+    public static function default_for_course(int $courseid, ?int $currentcheckmarkid = null): self {
+        return new self(
+            $courseid,
+            settings::include_existing_presentations_by_default(),
+            self::CHECKMARK_SELECTION_ALL,
+            [],
+            $currentcheckmarkid
+        );
     }
 
     /**
@@ -109,6 +119,7 @@ final class filter {
                 'cmid' => (int) $cm->id,
                 'name' => $name,
                 'inputid' => 'checkmark-randomselect-checkmark-' . $checkmarkid,
+                'iscurrent' => $checkmarkid === $this->currentcheckmarkid,
                 'checked' => $this->checkmarkselection === self::CHECKMARK_SELECTION_ALL
                     || in_array($checkmarkid, $this->selectedcheckmarkids, true),
             ];
@@ -141,6 +152,7 @@ final class filter {
             'alllabel' => get_string('all'),
             'selectedlabel' => get_string('selected', 'form'),
             'nonelabel' => get_string('none'),
+            'currentactivitylabel' => get_string('currentactivity', 'checkmark_randomselect'),
             'checkmarkoptions' => $checkmarkoptions,
             'hascheckmarkoptions' => !empty($checkmarkoptions),
             'nooptionsmessage' => get_string('novisiblecheckmarks', 'checkmark_randomselect'),

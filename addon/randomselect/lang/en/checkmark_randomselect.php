@@ -27,6 +27,7 @@ $string['assignmentsuccess'] = '{$a->examplecount} example(s) successfully assig
 $string['coursecheckmarks'] = 'Checkmark activities from this course';
 $string['coursecheckmarks_help'] = 'Select the checkmark activities to be used as the data basis for the random selection.';
 $string['createnewpreview'] = 'Create new preview';
+$string['currentactivity'] = 'Current activity';
 $string['examplesfromcurrentcheckmark'] = 'Examples from this checkmark activity';
 $string['examplesfromcurrentcheckmark_help'] = 'Select the examples from the current checkmark activity for which students are to be chosen at random.';
 $string['examplesperstudent'] = 'Number of examples per student';
