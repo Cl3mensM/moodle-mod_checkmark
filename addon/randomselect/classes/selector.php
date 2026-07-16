@@ -46,7 +46,7 @@ final class selector {
      * @param object $cm Current Checkmark course module.
      * @param object $checkmark Current Checkmark activity record.
      * @param context_module $context Current module context.
-     * @param int[] $selectedcheckmarkids Selected data-basis Checkmark activity ids.
+     * @param int[] $selectedcheckmarkids Checkmark activity ids used for presentation history.
      * @param bool $includeexistingpresentations Whether existing presentations should be included.
      * @param int[] $selectedexampleids Selected current-activity example ids.
      * @param int $examplesperstudent Maximum examples per selected student.
@@ -59,7 +59,7 @@ final class selector {
         private readonly object $checkmark,
         /** @var context_module Current module context. */
         private readonly context_module $context,
-        /** @var int[] Selected data-basis Checkmark activity ids. */
+        /** @var int[] Checkmark activity ids used for presentation history. */
         private readonly array $selectedcheckmarkids,
         /** @var bool Whether existing presentations should be included. */
         private readonly bool $includeexistingpresentations,
@@ -158,17 +158,17 @@ final class selector {
      */
     private function get_eligible_userids_by_example(array $examples): array {
         $candidateuserids = $this->get_candidate_userids();
-        if (empty($examples) || empty($candidateuserids) || empty($this->selectedcheckmarkids)) {
+        if (empty($examples) || empty($candidateuserids)) {
             return array_fill_keys(array_keys($examples), []);
         }
 
-        $checkedusersbyexample = $this->get_checked_userids_by_example_name($examples, $candidateuserids);
+        $checkedusersbyexample = $this->get_checked_userids_by_example_id(array_keys($examples), $candidateuserids);
         $eligible = [];
 
-        foreach ($examples as $exampleid => $example) {
+        foreach (array_keys($examples) as $exampleid) {
             $eligible[$exampleid] = array_values(array_intersect(
                 $candidateuserids,
-                $checkedusersbyexample[$example->get_name()] ?? []
+                $checkedusersbyexample[$exampleid] ?? []
             ));
         }
 
@@ -200,7 +200,7 @@ final class selector {
     }
 
     /**
-     * Return users with completed presentation in the selected data-basis Checkmark activities.
+     * Return users with completed presentation in the selected presentation-history activities.
      *
      * @param int[] $candidateuserids Candidate user ids.
      * @return int[]
@@ -232,54 +232,45 @@ final class selector {
     }
 
     /**
-     * Return users who checked each selected example name in the data-basis Checkmark activities.
+     * Return users who checked each selected example in the current Checkmark activity.
      *
-     * @param example[] $examples Selected examples keyed by current example id.
+     * @param int[] $exampleids Selected current-activity example ids.
      * @param int[] $candidateuserids Candidate user ids.
-     * @return array<string,int[]>
+     * @return array<int,int[]>
      */
-    private function get_checked_userids_by_example_name(array $examples, array $candidateuserids): array {
+    private function get_checked_userids_by_example_id(array $exampleids, array $candidateuserids): array {
         global $DB;
 
-        $targetnames = [];
-        foreach ($examples as $example) {
-            $targetnames[$example->get_name()] = true;
-        }
-
-        [$checkmarksql, $checkmarkparams] = $DB->get_in_or_equal(
-            $this->selectedcheckmarkids,
+        [$examplesql, $exampleparams] = $DB->get_in_or_equal(
+            $exampleids,
             SQL_PARAMS_NAMED,
-            'basiscm'
+            'currentexample'
         );
         [$usersql, $userparams] = $DB->get_in_or_equal($candidateuserids, SQL_PARAMS_NAMED, 'basisuser');
-        $params = $checkmarkparams + $userparams + [
+        $params = $exampleparams + $userparams + [
+            'currentcheckmark' => $this->checkmark->id,
             'checked' => example::CHECKED,
             'teacherchecked' => example::UNCHECKED_OVERWRITTEN,
         ];
 
-        $sql = "SELECT DISTINCT s.userid, c.exampleprefix, ex.name
+        $sql = "SELECT DISTINCT cc.exampleid, s.userid
                   FROM {checkmark_submissions} s
                   JOIN {checkmark_checks} cc ON cc.submissionid = s.id
-                  JOIN {checkmark_examples} ex ON ex.id = cc.exampleid
-                  JOIN {checkmark} c ON c.id = s.checkmarkid AND c.id = ex.checkmarkid
-                 WHERE s.checkmarkid {$checkmarksql}
+                  JOIN {checkmark_examples} ex ON ex.id = cc.exampleid AND ex.checkmarkid = s.checkmarkid
+                 WHERE s.checkmarkid = :currentcheckmark
+                   AND cc.exampleid {$examplesql}
                    AND s.userid {$usersql}
                    AND cc.state IN (:checked, :teacherchecked)";
 
         $checked = [];
         $records = $DB->get_recordset_sql($sql, $params);
         foreach ($records as $record) {
-            $examplename = (string) ($record->exampleprefix ?? '') . $record->name;
-            if (!isset($targetnames[$examplename])) {
-                continue;
-            }
-
-            $checked[$examplename][] = (int) $record->userid;
+            $checked[(int) $record->exampleid][] = (int) $record->userid;
         }
         $records->close();
 
-        foreach ($checked as $examplename => $userids) {
-            $checked[$examplename] = array_values(array_unique($userids));
+        foreach ($checked as $exampleid => $userids) {
+            $checked[$exampleid] = array_values(array_unique($userids));
         }
 
         return $checked;

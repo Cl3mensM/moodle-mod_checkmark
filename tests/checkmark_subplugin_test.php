@@ -605,6 +605,215 @@ final class checkmark_subplugin_test extends \advanced_testcase {
     }
 
     /**
+     * Random selection does not correlate same-named examples between activities.
+     */
+    public function test_randomselect_preview_uses_only_current_activity_checks(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+        $plugingenerator = $generator->get_plugin_generator('mod_checkmark');
+        $course = $generator->create_course();
+        $currentchecker = $generator->create_user();
+        $otherchecker = $generator->create_user();
+        $generator->enrol_user($currentchecker->id, $course->id, 'student');
+        $generator->enrol_user($otherchecker->id, $course->id, 'student');
+
+        $currentcheckmark = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+            'examplecount' => 2,
+            'grade' => 20,
+        ]);
+        $othercheckmark = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+            'examplecount' => 2,
+            'grade' => 20,
+        ]);
+        $exampleids = $this->get_example_ids($currentcheckmark);
+
+        $plugingenerator->create_submission([
+            'checkmark' => $currentcheckmark->id,
+            'userid' => $currentchecker->id,
+            'example1' => 1,
+        ]);
+        $plugingenerator->create_submission([
+            'checkmark' => $othercheckmark->id,
+            'userid' => $otherchecker->id,
+            'example2' => 1,
+        ]);
+
+        $selector = new \checkmark_randomselect\selector(
+            get_coursemodule_from_id('checkmark', $currentcheckmark->cmid),
+            $currentcheckmark,
+            \context_module::instance($currentcheckmark->cmid),
+            [$currentcheckmark->id, $othercheckmark->id],
+            true,
+            $exampleids,
+            1,
+            static function (array &$items): void {
+                // Keep test output deterministic.
+            }
+        );
+
+        $preview = $selector->create_preview();
+        $assignments = $preview->get_assignments();
+        $data = $preview->export_for_template((int) $course->id);
+
+        $this->assertCount(1, $assignments);
+        $this->assertSame($exampleids[0], $assignments[0]['exampleid']);
+        $this->assertSame((int) $currentchecker->id, $assignments[0]['userid']);
+        $this->assertTrue($data['hasunassigned']);
+        $this->assertSame($exampleids[1], $data['unassignedexamples'][0]['exampleid']);
+
+        $this->assertNull($selector->preview_from_assignments([[
+            'exampleid' => $exampleids[1],
+            'userid' => $otherchecker->id,
+        ]]));
+    }
+
+    /**
+     * Presentation history only uses the activities selected for that purpose.
+     */
+    public function test_randomselect_preview_scopes_presentation_history_to_selected_activities(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+        $plugingenerator = $generator->get_plugin_generator('mod_checkmark');
+        $course = $generator->create_course();
+        $student = $generator->create_user();
+        $generator->enrol_user($student->id, $course->id, 'student');
+
+        $currentcheckmark = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+            'examplecount' => 1,
+            'grade' => 10,
+        ]);
+        $historycheckmark = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+            'examplecount' => 1,
+            'grade' => 10,
+        ]);
+        $exampleids = $this->get_example_ids($currentcheckmark);
+
+        $plugingenerator->create_submission([
+            'checkmark' => $currentcheckmark->id,
+            'userid' => $student->id,
+            'example1' => 1,
+        ]);
+        $plugingenerator->create_feedback([
+            'checkmark' => $historycheckmark->id,
+            'userid' => $student->id,
+            'presentationstatus' => CHECKMARK_PRESENTATION_STATUS_YES,
+        ]);
+
+        $selector = new \checkmark_randomselect\selector(
+            get_coursemodule_from_id('checkmark', $currentcheckmark->cmid),
+            $currentcheckmark,
+            \context_module::instance($currentcheckmark->cmid),
+            [$historycheckmark->id],
+            false,
+            $exampleids,
+            1,
+            static function (array &$items): void {
+                // Keep test output deterministic.
+            }
+        );
+        $this->assertEmpty($selector->create_preview()->get_assignments());
+
+        $selector = new \checkmark_randomselect\selector(
+            get_coursemodule_from_id('checkmark', $currentcheckmark->cmid),
+            $currentcheckmark,
+            \context_module::instance($currentcheckmark->cmid),
+            [$currentcheckmark->id],
+            false,
+            $exampleids,
+            1,
+            static function (array &$items): void {
+                // Keep test output deterministic.
+            }
+        );
+        $this->assertCount(1, $selector->create_preview()->get_assignments());
+
+        $selector = new \checkmark_randomselect\selector(
+            get_coursemodule_from_id('checkmark', $currentcheckmark->cmid),
+            $currentcheckmark,
+            \context_module::instance($currentcheckmark->cmid),
+            [],
+            false,
+            $exampleids,
+            1,
+            static function (array &$items): void {
+                // Keep test output deterministic.
+            }
+        );
+        $this->assertCount(1, $selector->create_preview()->get_assignments());
+    }
+
+    /**
+     * One student can receive all checked current examples up to the configured maximum.
+     */
+    public function test_randomselect_preview_assigns_two_current_examples_without_warning(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $generator = $this->getDataGenerator();
+        $plugingenerator = $generator->get_plugin_generator('mod_checkmark');
+        $course = $generator->create_course();
+        $student = $generator->create_user();
+        $generator->enrol_user($student->id, $course->id, 'student');
+
+        $checkmark = $generator->create_module('checkmark', [
+            'course' => $course->id,
+            'presentationgrading' => 1,
+            'presentationgrade' => 100,
+            'examplecount' => 2,
+            'grade' => 20,
+        ]);
+        $exampleids = $this->get_example_ids($checkmark);
+        $plugingenerator->create_submission([
+            'checkmark' => $checkmark->id,
+            'userid' => $student->id,
+            'example1' => 1,
+            'example2' => 1,
+        ]);
+
+        $selector = new \checkmark_randomselect\selector(
+            get_coursemodule_from_id('checkmark', $checkmark->cmid),
+            $checkmark,
+            \context_module::instance($checkmark->cmid),
+            [],
+            false,
+            $exampleids,
+            2,
+            static function (array &$items): void {
+                // Keep test output deterministic.
+            }
+        );
+
+        $preview = $selector->create_preview();
+        $assignments = $preview->get_assignments();
+        $data = $preview->export_for_template((int) $course->id);
+
+        $this->assertCount(2, $assignments);
+        $this->assertEqualsCanonicalizing($exampleids, array_column($assignments, 'exampleid'));
+        $this->assertSame(
+            [(int) $student->id],
+            array_values(array_unique(array_column($assignments, 'userid')))
+        );
+        $this->assertFalse($data['hasunassigned']);
+        $this->assertFalse($data['hascapacitywarning']);
+    }
+
+    /**
      * Random selection warns when the configured count cannot be reached for every eligible student.
      */
     public function test_randomselect_preview_warns_about_unmet_examples_per_student_count(): void {
