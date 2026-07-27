@@ -759,6 +759,7 @@ class checkmark {
         $attendantcount = -1;
         $absencecount = -1;
         $needattendanceentrycount = -1;
+        $presentationmarkedcount = -1;
         $presentationgradingcount = -1;
         if ($this->checkmark->trackattendance) {
             $attendantcount = submissionstable::count_userids(
@@ -781,6 +782,12 @@ class checkmark {
             );
         }
         if ($this->checkmark->presentationgrading) {
+            $presentationmarkedcount = submissionstable::count_userids(
+                $this->context,
+                $this->checkmark->id,
+                $currentgroup,
+                self::FILTER_PRESENTATION_MARKED
+            );
             $presentationgradingcount = submissionstable::count_userids(
                 $this->context,
                 $this->checkmark->id,
@@ -803,7 +810,8 @@ class checkmark {
             $attendantcount,
             $absencecount,
             $needattendanceentrycount,
-            $presentationgradingcount
+            $presentationgradingcount,
+            $presentationmarkedcount
         );
         return $summary;
     }
@@ -1247,8 +1255,15 @@ class checkmark {
             $gradebtntype = 'btn-primary';
         }
         $context = context_module::instance($this->cm->id);
+        $submitted .= \checkmark_randomselect\access::render_start_button(
+            $context,
+            $this->checkmark,
+            $this->cm->id,
+            new moodle_url('/mod/checkmark/view.php', ['id' => $this->cm->id]),
+            ['class' => 'btn btn-secondary mr-1 ml-0']
+        );
         if (has_capability('mod/checkmark:grade', $context)) {
-            $submitted = html_writer::tag('a', get_string('gradebutton', 'checkmark'), [
+            $submitted .= html_writer::tag('a', get_string('gradebutton', 'checkmark'), [
                 'class' => 'btn ' . $gradebtntype . ' mr-1 ml-0',
                 'href' => $urlbase . 'submissions.php?id=' . $this->cm->id,
                 'id' => 'submissions',
@@ -2418,6 +2433,34 @@ class checkmark {
                         }
                     }
 
+                    // Bulk mark users for presentation.
+                    if ($bulkaction === 'markpresentation') {
+                        if (has_capability('mod/checkmark:gradepresentation', $this->context)) {
+                            $result = $this->mark_presentations($selected);
+                            if ($message !== '') {
+                                $message .= html_writer::empty_tag('br');
+                            }
+                            if ($result['status'] == GRADE_UPDATE_OK) {
+                                if ($result['updated'] == 1) {
+                                    $string = 'markforpresentationonesuccess';
+                                } else {
+                                    $string = 'markforpresentationsuccess';
+                                }
+                                $message .= $OUTPUT->notification(
+                                    get_string($string, 'checkmark', $result['updated']),
+                                    'notifysuccess'
+                                );
+                            } else {
+                                $message .= $OUTPUT->notification(
+                                    get_string('markforpresentationfailed', 'checkmark'),
+                                    'notifyproblem'
+                                );
+                            }
+                        } else {
+                            throw new moodle_exception('markforpresentationerror', 'checkmark');
+                        }
+                    }
+
                     // Bulk remove grades.
                     if (in_array($bulkaction, ['removegrade'])) {
                         if (has_capability('mod/checkmark:grade', context_module::instance($this->cm->id))) {
@@ -2594,6 +2637,8 @@ class checkmark {
                     $updatedb = false;
                     $gradeupdated = false;
                     $presentationupdated = false;
+                    $presentationdataupdated = false;
+                    $presentationstatuschanged = false;
 
                     if (!isset($oldgrades[$id])) {
                         $oldgrades[$id] = -1;
@@ -2654,9 +2699,10 @@ class checkmark {
                         if (!array_key_exists($presentationstatus, submissionstable::get_presentation_status_menu())) {
                             $presentationstatus = CHECKMARK_PRESENTATION_STATUS_NO;
                         }
-                        if ($haspresentationdata) {
+                        if ($finalpresentationgrade !== null) {
                             $presentationstatus = CHECKMARK_PRESENTATION_STATUS_YES;
                         }
+                        $presentationstatuschanged = $oldpresentationstatuses[$id] != $presentationstatus;
                         $updatedb = $updatedb || ($oldpresentationstatuses[$id] != $presentationstatus);
                         if ($feedback === false) {
                             $feedback = $this->prepare_new_feedback($id);
@@ -2681,6 +2727,7 @@ class checkmark {
                             $feedback->presentationstatus = CHECKMARK_PRESENTATION_STATUS_YES;
                         }
                         $presentationupdated = true;
+                        $presentationdataupdated = true;
                     } else {
                         unset($feedback->presentationgrade);
                     }
@@ -2699,6 +2746,7 @@ class checkmark {
                             $feedback->presentationstatus = CHECKMARK_PRESENTATION_STATUS_YES;
                         }
                         $presentationupdated = true;
+                        $presentationdataupdated = true;
                     } else {
                         unset($feedback->presentationfeedback);  // Don't need to update this.
                     }
@@ -2706,6 +2754,10 @@ class checkmark {
                     if (
                         ($presstatusediting || $presgrading || $prescommenting) && $feedback !== false
                             && $haspresentationdata
+                            && ($finalpresentationgrade !== null
+                                || (!$presentationstatuschanged && ($presentationdataupdated
+                                || (int)$oldpresentationstatuses[$id] === CHECKMARK_PRESENTATION_STATUS_YES)
+                                ))
                     ) {
                         $currentpresentationstatus = (int)($feedback->presentationstatus ?? $oldpresentationstatuses[$id]);
                         if ($currentpresentationstatus !== CHECKMARK_PRESENTATION_STATUS_YES) {
@@ -3238,6 +3290,13 @@ class checkmark {
             'href' => $urlbase . 'submissions.php?id=' . $this->cm->id,
             'id' => 'submissions',
         ]);
+        echo \checkmark_randomselect\access::render_start_button(
+            $this->context,
+            $this->checkmark,
+            $this->cm->id,
+            new moodle_url('/mod/checkmark/submissions.php', ['id' => $this->cm->id]),
+            ['class' => 'btn btn-secondary float-right mr-1']
+        );
 
         echo html_writer::start_tag('div', ['class' => 'usersubmissions']);
 
@@ -3398,6 +3457,13 @@ class checkmark {
             }
 
             if ($this->checkmark->presentationgrading) {
+                if (has_capability('mod/checkmark:gradepresentation', $this->context)) {
+                    $addbulkaction(
+                        $presentationgroup,
+                        get_string('markforpresentation', 'checkmark'),
+                        'markpresentation'
+                    );
+                }
                 $addbulkaction(
                     $presentationgroup,
                     get_string('remove_presentation_grade', 'checkmark'),
@@ -4358,6 +4424,8 @@ class checkmark {
         $update = false;
         $gradeupdated = false;
         $presentationupdated = false;
+        $presentationdataupdated = false;
+        $presentationstatuschanged = false;
         $oldgrade = $feedback->grade ?? null;
         $oldfeedback = (string)($feedback->feedback ?? '');
         $oldformat = (int)($feedback->format ?? FORMAT_HTML);
@@ -4421,29 +4489,39 @@ class checkmark {
                 $feedback->presentationstatus = $presentationstatus;
                 $feedback->graderid = $USER->id;
                 $presentationupdated = $oldpresentationstatus !== $presentationstatus;
+                $presentationstatuschanged = $presentationupdated;
                 $update = true;
             }
 
             if (!$presgradedisabled) {
                 $newpresentationgrade = null;
                 if ($this->checkmark->presentationgrade) {
-                    $newpresentationgrade = $formdata->presentationgrade;
-                    if ($formdata->presentationgrade == -1) {
+                    $newpresentationgrade = $formdata->presentationgrade ?? -1;
+                    if ($newpresentationgrade == -1) {
                         // Normalize the presentationgrade!
                         $newpresentationgrade = null;
                     }
                     $feedback->presentationgrade = $newpresentationgrade;
+                    $presentationdataupdated = $presentationdataupdated || ($oldpresentationgrade != $newpresentationgrade);
                 }
                 $newpresentationfeedback = (string)($formdata->presentationfeedback_editor['text'] ?? '');
                 $newpresentationformat = (int)($formdata->presentationfeedback_editor['format'] ?? FORMAT_HTML);
                 $feedback->presentationfeedback = $newpresentationfeedback;
                 $feedback->presentationformat = $newpresentationformat;
-                if (($newpresentationgrade !== null) || ($newpresentationfeedback !== '')) {
+                $presentationfeedbackupdated = $oldpresentationfeedback !== $newpresentationfeedback;
+                $presentationdataupdated = $presentationdataupdated || $presentationfeedbackupdated;
+                $haspresentationdata = ($newpresentationgrade !== null) || ($newpresentationfeedback !== '');
+                if (
+                    $haspresentationdata
+                    && ($newpresentationgrade !== null
+                        || (!$presentationstatuschanged && ($presentationdataupdated
+                            || $oldpresentationstatus === CHECKMARK_PRESENTATION_STATUS_YES)))
+                ) {
                     $feedback->presentationstatus = CHECKMARK_PRESENTATION_STATUS_YES;
                 }
                 $feedback->graderid = $USER->id;
                 $presentationupdated = $presentationupdated
-                        || ($oldpresentationfeedback !== $newpresentationfeedback)
+                        || $presentationfeedbackupdated
                         || (!empty($newpresentationfeedback) && $oldpresentationformat !== $newpresentationformat);
                 if ($this->checkmark->presentationgrade) {
                     $presentationupdated = $presentationupdated || ($oldpresentationgrade != $newpresentationgrade);
@@ -5153,6 +5231,57 @@ class checkmark {
             }
         }
         return $record;
+    }
+
+    /**
+     * Mark selected users for presentation.
+     *
+     * Only the presentation status and its modification metadata are changed. Existing grades and feedback are preserved.
+     *
+     * @param int[] $selected Selected user ids.
+     * @return array Result containing status and number of updated users.
+     * @throws dml_exception
+     */
+    public function mark_presentations(array $selected): array {
+        global $DB, $USER;
+
+        $result = ['status' => GRADE_UPDATE_FAILED, 'updated' => 0];
+        if (!$this->checkmark->presentationgrading || empty($selected)) {
+            return $result;
+        }
+
+        $selected = array_values(array_filter(
+            array_unique(array_map('intval', $selected)),
+            static fn(int $userid): bool => $userid > 0
+        ));
+        if (empty($selected)) {
+            return $result;
+        }
+
+        [$useridsql, $params] = $DB->get_in_or_equal($selected, SQL_PARAMS_NAMED, 'user');
+        $users = $DB->get_records_select('user', 'deleted = 0 AND id ' . $useridsql, $params, '', 'id');
+        if (empty($users)) {
+            return $result;
+        }
+
+        $now = time();
+        foreach ($users as $user) {
+            $feedback = $this->prepare_new_feedback($user->id);
+            $feedback->presentationstatus = CHECKMARK_PRESENTATION_STATUS_MARKED;
+            $feedback->graderid = $USER->id;
+            $feedback->timemodified = $now;
+            $feedback->presentationtimemodified = $now;
+            $DB->update_record('checkmark_feedbacks', $feedback);
+            $result['updated']++;
+
+            \mod_checkmark\event\grade_updated::manual($this->cm, [
+                'userid' => $feedback->userid,
+                'feedbackid' => $feedback->id,
+            ])->trigger();
+        }
+
+        $result['status'] = GRADE_UPDATE_OK;
+        return $result;
     }
 
     /**

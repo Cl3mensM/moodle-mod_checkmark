@@ -1,4 +1,4 @@
-@mod @mod_checkmark @amc @with_checkmarkaddon_simple
+@mod @mod_checkmark @with_checkmark_simple
 Feature: Manage Checkmark add-on subplugins
   In order to confirm that Checkmark supports add-on subplugins
   As an administrator

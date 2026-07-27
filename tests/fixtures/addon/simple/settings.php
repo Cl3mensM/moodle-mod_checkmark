@@ -17,7 +17,7 @@
 /**
  * Admin settings for the simple checkmark add-on fixture.
  *
- * @package   checkmarkaddon_simple
+ * @package   checkmark_simple
  * @copyright 2026 Academic Moodle Cooperation {@link http://www.academic-moodle-cooperation.org}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
@@ -25,9 +25,9 @@
 defined('MOODLE_INTERNAL') || die();
 
 $settings->add(new admin_setting_configtext(
-    'checkmarkaddon_simple/configtext',
-    new lang_string('configtext', 'checkmarkaddon_simple'),
-    new lang_string('configtext_desc', 'checkmarkaddon_simple'),
+    'checkmark_simple/configtext',
+    new lang_string('configtext', 'checkmark_simple'),
+    new lang_string('configtext_desc', 'checkmark_simple'),
     'fixture',
     PARAM_TEXT
 ));

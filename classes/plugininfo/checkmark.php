@@ -35,7 +35,7 @@ use moodle_url;
  * @copyright 2026 Academic Moodle Cooperation {@link http://www.academic-moodle-cooperation.org}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
-class checkmarkaddon extends base {
+class checkmark extends base {
     /**
      * Whether Checkmark add-on plugins can be disabled.
      *
@@ -53,14 +53,14 @@ class checkmarkaddon extends base {
     public static function get_enabled_plugins() {
         global $DB;
 
-        $plugins = core_plugin_manager::instance()->get_installed_plugins('checkmarkaddon');
+        $plugins = core_plugin_manager::instance()->get_installed_plugins('checkmark');
         if (!$plugins) {
             return [];
         }
 
         $installed = [];
         foreach ($plugins as $plugin => $version) {
-            $installed[] = 'checkmarkaddon_' . $plugin;
+            $installed[] = 'checkmark_' . $plugin;
         }
 
         [$installedsql, $params] = $DB->get_in_or_equal($installed, SQL_PARAMS_NAMED);
@@ -96,7 +96,7 @@ class checkmarkaddon extends base {
     public static function enable_plugin(string $pluginname, int $enabled): bool {
         $haschanged = false;
 
-        $plugin = 'checkmarkaddon_' . $pluginname;
+        $plugin = 'checkmark_' . $pluginname;
         $oldvalue = get_config($plugin, 'disabled');
         $disabled = !$enabled;
 
@@ -126,7 +126,7 @@ class checkmarkaddon extends base {
      * @return moodle_url
      */
     public static function get_manage_url() {
-        return new moodle_url('/mod/checkmark/adminmanageplugins.php', ['subtype' => 'checkmarkaddon']);
+        return new moodle_url('/mod/checkmark/adminmanageplugins.php', ['subtype' => 'checkmark']);
     }
 
     /**

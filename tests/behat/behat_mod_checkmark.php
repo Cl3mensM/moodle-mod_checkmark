@@ -37,9 +37,9 @@ class behat_mod_checkmark extends behat_base {
     /**
      * Make the simple checkmark add-on fixture available for this scenario.
      *
-     * @BeforeScenario @with_checkmarkaddon_simple
+     * @BeforeScenario @with_checkmark_simple
      */
-    public function setup_simple_checkmarkaddon(): void {
+    public function setup_simple_checkmark_subplugin(): void {
         global $CFG;
 
         require_once($CFG->libdir . '/upgradelib.php');
@@ -51,19 +51,19 @@ class behat_mod_checkmark extends behat_base {
         $mockedcomponent = new ReflectionClass(core_component::class);
 
         $plugins = $mockedcomponent->getStaticPropertyValue('plugins');
-        $plugins['checkmarkaddon'][$pluginname] = $plugindir;
+        $plugins['checkmark'][$pluginname] = $plugindir;
         $mockedcomponent->setStaticPropertyValue('plugins', $plugins);
 
         $plugintypes = $mockedcomponent->getStaticPropertyValue('plugintypes');
-        $plugintypes['checkmarkaddon'] = $fixturepath;
+        $plugintypes['checkmark'] = $fixturepath;
         $mockedcomponent->setStaticPropertyValue('plugintypes', $plugintypes);
 
         $mockedcomponent->getMethod('fill_classmap_cache')->invoke(null);
         $mockedcomponent->getMethod('fill_filemap_cache')->invoke(null);
 
         $subplugins = $mockedcomponent->getStaticPropertyValue('subplugins');
-        if (!in_array($pluginname, $subplugins['mod_checkmark']['checkmarkaddon'], true)) {
-            $subplugins['mod_checkmark']['checkmarkaddon'][] = $pluginname;
+        if (!in_array($pluginname, $subplugins['mod_checkmark']['checkmark'], true)) {
+            $subplugins['mod_checkmark']['checkmark'][] = $pluginname;
         }
         $mockedcomponent->setStaticPropertyValue('subplugins', $subplugins);
 
@@ -81,22 +81,22 @@ class behat_mod_checkmark extends behat_base {
         $mockedcomponent->setStaticPropertyValue('plugintypes', null);
         $mockedcomponent->getMethod('init')->invoke(null);
 
-        $manager = core_plugin_manager::resolve_plugininfo_class('checkmarkaddon');
+        $manager = core_plugin_manager::resolve_plugininfo_class('checkmark');
         $manager::enable_plugin($pluginname, true);
     }
 
     /**
      * Remove the simple checkmark add-on fixture after this scenario.
      *
-     * @AfterScenario @with_checkmarkaddon_simple
+     * @AfterScenario @with_checkmark_simple
      */
-    public function teardown_simple_checkmarkaddon(): void {
+    public function teardown_simple_checkmark_subplugin(): void {
         global $CFG;
 
-        unset_config('version', 'checkmarkaddon_simple');
-        unset_config('disabled', 'checkmarkaddon_simple');
-        unset_config('sortorder', 'checkmarkaddon_simple');
-        unset_config('configtext', 'checkmarkaddon_simple');
+        unset_config('version', 'checkmark_simple');
+        unset_config('disabled', 'checkmark_simple');
+        unset_config('sortorder', 'checkmark_simple');
+        unset_config('configtext', 'checkmark_simple');
 
         $cachefile = $CFG->cachedir . '/core_component.php';
         if (file_exists($cachefile)) {

@@ -1,0 +1,154 @@
+{{!
+    This file is part of mod_checkmark for Moodle - http://moodle.org/
+
+    Moodle is free software: you can redistribute it and/or modify
+    it under the terms of the GNU General Public License as published by
+    the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    Moodle is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU General Public License for more details.
+
+    You should have received a copy of the GNU General Public License
+    along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
+}}
+{{!
+    @template checkmark_randomselect/filtercriteria
+
+    Filter criteria controls for the Checkmark random selection page.
+
+    Context variables required for this template:
+    * coursecheckmarkslabel - Label for the Checkmark activity selector.
+    * coursecheckmarkshelpicon - Rendered help icon for the Checkmark activity selector.
+    * checkmarkselectionname - Name for the activity selection mode radios.
+    * checkmarkselectionall - Value for selecting all activities.
+    * checkmarkselectionallid - Id for the all activities radio.
+    * checkmarkselectionallchecked - Whether the all activities radio is checked.
+    * checkmarkselectionselected - Value for selecting specific activities.
+    * checkmarkselectionselectedid - Id for the selected activities radio.
+    * checkmarkselectionselectedchecked - Whether the selected activities radio is checked.
+    * alllabel - Label for All controls.
+    * selectedlabel - Label for the Selected radio.
+    * nonelabel - Label for the None action.
+    * currentactivitylabel - Label identifying the current Checkmark activity.
+    * checkmarkoptions - Visible Checkmark activity options.
+    * hascheckmarkoptions - Whether options are available.
+    * nooptionsmessage - Message shown when no options are available.
+    * includeexistingpresentationslabel - Label for the presentation selector.
+    * includeexistingpresentationshelpicon - Rendered help icon for the presentation selector.
+    * includeexistingpresentationsname - Name for the presentation selector.
+    * includeexistingpresentationsoptions - Yes/No presentation selector options.
+
+    Example context (json):
+    {
+        "coursecheckmarkslabel": "Checkmark activities from this course",
+        "coursecheckmarkshelpicon": "",
+        "checkmarkselectionname": "checkmarkselection",
+        "checkmarkselectionall": "all",
+        "checkmarkselectionallid": "checkmark-randomselect-checkmark-selection-all",
+        "checkmarkselectionallchecked": true,
+        "checkmarkselectionselected": "selected",
+        "checkmarkselectionselectedid": "checkmark-randomselect-checkmark-selection-selected",
+        "checkmarkselectionselectedchecked": false,
+        "alllabel": "All",
+        "selectedlabel": "Selected",
+        "nonelabel": "None",
+        "currentactivitylabel": "Current activity",
+        "checkmarkoptions": [
+            {
+                "id": 12,
+                "name": "Checkmark 1",
+                "inputid": "checkmark-randomselect-checkmark-12",
+                "iscurrent": true,
+                "checked": true
+            }
+        ],
+        "hascheckmarkoptions": true,
+        "nooptionsmessage": "No visible Checkmark activities are available.",
+        "includeexistingpresentationslabel": "Include participants with existing presentation",
+        "includeexistingpresentationshelpicon": "",
+        "includeexistingpresentationsname": "includeexistingpresentations",
+        "includeexistingpresentationsoptions": [
+            {"value": 1, "label": "Yes", "selected": false},
+            {"value": 0, "label": "No", "selected": true}
+        ]
+    }
+}}
+<div data-region="checkmark-randomselect-filtercriteria">
+    <div class="form-group row mb-4">
+        <div class="col-md-4">
+            <div>
+                <label class="mb-0 mr-1 d-inline">{{coursecheckmarkslabel}}</label>
+                <span>{{{coursecheckmarkshelpicon}}}</span>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <div class="form-check">
+                <input class="form-check-input" type="radio" name="{{checkmarkselectionname}}"
+                       id="{{checkmarkselectionallid}}" value="{{checkmarkselectionall}}"
+                       {{#checkmarkselectionallchecked}}checked{{/checkmarkselectionallchecked}}
+                       data-region="checkmark-randomselect-checkmark-selection-all">
+                <label class="form-check-label" for="{{checkmarkselectionallid}}">{{alllabel}}</label>
+            </div>
+            <div class="form-check mt-2">
+                <input class="form-check-input" type="radio" name="{{checkmarkselectionname}}"
+                       id="{{checkmarkselectionselectedid}}" value="{{checkmarkselectionselected}}"
+                       {{#checkmarkselectionselectedchecked}}checked{{/checkmarkselectionselectedchecked}}
+                       data-region="checkmark-randomselect-checkmark-selection-selected">
+                <label class="form-check-label" for="{{checkmarkselectionselectedid}}">{{selectedlabel}}</label>
+            </div>
+            <div class="ml-4 mt-1" data-region="checkmark-randomselect-checkmark-options">
+                <div class="mb-1">
+                    <a href="#" data-action="select-all-checkmarks">{{alllabel}}</a>
+                    <span aria-hidden="true"> / </span>
+                    <a href="#" data-action="select-no-checkmarks">{{nonelabel}}</a>
+                </div>
+                <div class="form-control overflow-auto text-muted" style="height: 7rem;"
+                     data-region="checkmark-randomselect-checkmark-list">
+                    {{#hascheckmarkoptions}}
+                        {{#checkmarkoptions}}
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="checkmarkids[]"
+                                       id="{{inputid}}" value="{{id}}" {{#checked}}checked{{/checked}}
+                                       disabled data-region="checkmark-randomselect-checkmark-option">
+                                <label class="form-check-label" for="{{inputid}}">
+                                    {{#iscurrent}}<strong>{{name}}</strong>{{/iscurrent}}
+                                    {{^iscurrent}}{{name}}{{/iscurrent}}
+                                    {{#iscurrent}}
+                                        <span class="badge rounded-pill text-bg-secondary fw-normal ms-2">
+                                            {{currentactivitylabel}}
+                                        </span>
+                                    {{/iscurrent}}
+                                </label>
+                            </div>
+                        {{/checkmarkoptions}}
+                    {{/hascheckmarkoptions}}
+                    {{^hascheckmarkoptions}}
+                        <span class="text-muted">{{nooptionsmessage}}</span>
+                    {{/hascheckmarkoptions}}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="form-group row mb-0">
+        <div class="col-md-4">
+            <div>
+                <label class="mb-0 mr-1 d-inline" for="checkmark-randomselect-include-existing-presentations">
+                    {{includeexistingpresentationslabel}}
+                </label>
+                <span>{{{includeexistingpresentationshelpicon}}}</span>
+            </div>
+        </div>
+        <div class="col-md-8">
+            <select class="form-select w-auto" id="checkmark-randomselect-include-existing-presentations"
+                    name="{{includeexistingpresentationsname}}">
+                {{#includeexistingpresentationsoptions}}
+                    <option value="{{value}}" {{#selected}}selected{{/selected}}>{{label}}</option>
+                {{/includeexistingpresentationsoptions}}
+            </select>
+        </div>
+    </div>
+</div>

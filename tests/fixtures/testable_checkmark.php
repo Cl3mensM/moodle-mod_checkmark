@@ -24,11 +24,15 @@ namespace mod_checkmark;
  * @license     http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 class testable_checkmark extends \checkmark {
+    /** @var string Last submissions-page message. */
+    public string $lastsubmissionmessage = '';
+
     /**
      * Suppress output rendering in process tests.
      *
      * @param string $message Optional notification message.
      */
     public function display_submissions($message = '') {
+        $this->lastsubmissionmessage = $message;
     }
 }

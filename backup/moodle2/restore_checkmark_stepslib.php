@@ -50,7 +50,7 @@ class restore_checkmark_activity_structure_step extends restore_activity_structu
 
         $checkmark = new restore_path_element('checkmark', '/activity/checkmark');
         $paths[] = $checkmark;
-        $this->add_subplugin_structure('checkmarkaddon', $checkmark);
+        $this->add_subplugin_structure('checkmark', $checkmark);
 
         $example = new restore_path_element(
             'checkmark_example',

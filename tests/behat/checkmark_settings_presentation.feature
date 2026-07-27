@@ -29,7 +29,7 @@ Feature: Track presentations and grade them
       | id_presentationgrading | 0 |
     And I press "Save and display"
     And I follow "Submissions"
-    Then I should not see "presentation"
+    Then I should not see "Presentation" in the "generaltable" "table"
     And I follow "Settings"
     And I set the following fields to these values:
       | id_presentationgrading             | 1    |

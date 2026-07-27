@@ -15,15 +15,22 @@
 // along with Moodle.  If not, see <http://www.gnu.org/licenses/>.
 
 /**
- * Version details for the simple checkmark add-on fixture.
+ * Admin settings for the Checkmark random selection add-on.
  *
- * @package   checkmark_simple
+ * @package   checkmark_randomselect
  * @copyright 2026 Academic Moodle Cooperation {@link http://www.academic-moodle-cooperation.org}
  * @license   http://www.gnu.org/copyleft/gpl.html GNU GPL v3 or later
  */
 
 defined('MOODLE_INTERNAL') || die();
 
-$plugin->component = 'checkmark_simple';
-$plugin->version = 2026061000;
-$plugin->requires = 2025100600;
+$settings->add(new admin_setting_configselect(
+    'checkmark_randomselect/' . \checkmark_randomselect\settings::INCLUDE_EXISTING_PRESENTATIONS,
+    new lang_string('includeexistingpresentations', 'checkmark_randomselect'),
+    new lang_string('includeexistingpresentations_desc', 'checkmark_randomselect'),
+    0,
+    [
+        0 => get_string('no'),
+        1 => get_string('yes'),
+    ]
+));

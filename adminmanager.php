@@ -36,7 +36,7 @@ require_once($CFG->libdir . '/adminlib.php');
 class checkmark_plugin_manager {
     /** @var array Supported checkmark subplugin types and their directories. */
     private const SUBPLUGIN_TYPES = [
-        'checkmarkaddon' => 'addon',
+        'checkmark' => 'addon',
     ];
 
     /** @var moodle_url The current management page URL. */

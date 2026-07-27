@@ -27,7 +27,7 @@ require_once($CFG->dirroot . '/mod/checkmark/adminlib.php');
 
 require_login();
 
-$subtype = optional_param('subtype', 'checkmarkaddon', PARAM_PLUGIN);
+$subtype = optional_param('subtype', 'checkmark', PARAM_PLUGIN);
 $action = optional_param('action', null, PARAM_PLUGIN);
 $plugin = optional_param('plugin', null, PARAM_PLUGIN);
 
