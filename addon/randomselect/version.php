@@ -25,5 +25,5 @@
 defined('MOODLE_INTERNAL') || die();
 
 $plugin->component = 'checkmark_randomselect';
-$plugin->version = 2026062600;
-$plugin->requires = 2025100600;
+$plugin->version   = 2026072800;
+$plugin->requires  = 2026042000;
