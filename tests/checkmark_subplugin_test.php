@@ -465,7 +465,7 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         $data = $page->export_for_template($PAGE->get_renderer('core'));
 
         $this->assertStringContainsString(
-            'Here, you can randomly select participants for a presentation.',
+            'Here, you can randomly select students for a presentation.',
             $data['pageintro']
         );
         $this->assertCount(2, $data['sections']);
