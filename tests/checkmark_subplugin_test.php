@@ -276,8 +276,12 @@ final class checkmark_subplugin_test extends \advanced_testcase {
         );
         $this->assertStringContainsString('/mod/checkmark/addon/randomselect/index.php', $buttons);
         $this->assertLessThan(
-            strpos($buttons, get_string('gradebutton', 'checkmark')),
-            strpos($buttons, get_string('startpresentationrandomselection', 'checkmark_randomselect'))
+            strpos($buttons, get_string('viewpreview', 'checkmark')),
+            strpos($buttons, get_string('gradebutton', 'checkmark'))
+        );
+        $this->assertLessThan(
+            strpos($buttons, get_string('startpresentationrandomselection', 'checkmark_randomselect')),
+            strpos($buttons, get_string('viewpreview', 'checkmark'))
         );
 
         set_config('disabled', 1, 'checkmark_randomselect');

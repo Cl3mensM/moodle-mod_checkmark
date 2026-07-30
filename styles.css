@@ -78,7 +78,7 @@
     margin-right: 5px;
 }
 
-#page-mod-checkmark-submissions .submissions colgroup.presentation {
+.path-mod-checkmark .submissions colgroup.presentation {
     border-left: 2px solid rgba(153, 153, 153, 0.95);
 }
 
