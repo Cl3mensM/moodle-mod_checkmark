@@ -32,6 +32,41 @@ require_once($CFG->dirroot . '/mod/checkmark/locallib.php');
 #[\PHPUnit\Framework\Attributes\CoversClass(submissionstable::class)]
 final class submissionstable_test extends \advanced_testcase {
     /**
+     * Example markers are scaled to remain visible in narrow PDF columns.
+     */
+    public function test_export_example_columns_use_scaling(): void {
+        $this->resetAfterTest(true);
+        $this->setAdminUser();
+
+        $course = $this->getDataGenerator()->create_course();
+        $student = $this->getDataGenerator()->create_user();
+        $this->getDataGenerator()->enrol_user($student->id, $course->id, 'student');
+        $checkmark = $this->getDataGenerator()->create_module('checkmark', [
+            'course' => $course->id,
+            'examplecount' => 3,
+            'grade' => 30,
+        ]);
+
+        $table = submissionstable::create_export_table(
+            $checkmark->cmid,
+            \checkmark::FILTER_ALL,
+            [$student->id]
+        );
+        [, , , $columnformats] = $table->get_data();
+        $exampleformats = array_filter(
+            $columnformats,
+            static fn($key): bool => str_starts_with($key, 'example'),
+            ARRAY_FILTER_USE_KEY
+        );
+
+        $this->assertCount(3, $exampleformats);
+        foreach ($exampleformats as $format) {
+            $this->assertSame('C', $format['align']);
+            $this->assertSame(MTablePDF::STRETCH_SCALING, $format['stretch']);
+        }
+    }
+
+    /**
      * Presentation feedback keeps HTML normally and uses readable plain text in quick grading.
      */
     public function test_presentation_feedback_output_with_and_without_quick_grading(): void {
