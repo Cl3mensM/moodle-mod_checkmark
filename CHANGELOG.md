@@ -12,6 +12,7 @@ CHANGELOG
 * [FEATURE] #8733 Extend presentation data in Checkmark with additional fields and filters
 * [FEATURE] #8758 Link presentation summary counts to grading summary
 * [FEATURE] #8768 Add a bulk action to mark participants for presentation
+* [FIXED] #8781 Ensure per-example checkmarks remain visible in PDF exports at all text sizes
 
 5.1.0 (2026-01-06)
 ------------------
