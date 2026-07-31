@@ -407,6 +407,7 @@ class submissionstable extends \table_sql {
             ];
             $this->columnformat['example' . $key] = [
                 'align' => 'C',
+                'stretch' => MTablePDF::STRETCH_SCALING,
             ];
             $helpicons[] = null;
         }
