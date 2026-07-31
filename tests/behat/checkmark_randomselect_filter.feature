@@ -28,7 +28,7 @@ Feature: Configure Checkmark random selection filters
     And I follow "Start random selection for presentation"
     And I click on "//button[@aria-controls='checkmark-randomselect-filtercriteria']" "xpath_element"
     Then I should see "Checkmark activities from this course" in the "#checkmark-randomselect-filtercriteria" "css_element"
-    And I should see "Include participants with existing presentation" in the "#checkmark-randomselect-filtercriteria" "css_element"
+    And I should see "Include students with existing presentations" in the "#checkmark-randomselect-filtercriteria" "css_element"
     And I should see "Alpha Checkmark" in the "#checkmark-randomselect-filtercriteria" "css_element"
     And I should see "Zulu Checkmark" in the "#checkmark-randomselect-filtercriteria" "css_element"
     And I should see "Current activity" in the "//label[contains(., 'Zulu Checkmark')]" "xpath_element"
@@ -40,7 +40,7 @@ Feature: Configure Checkmark random selection filters
     And the field "Alpha Checkmark" matches value "1"
     And the "Alpha Checkmark" "checkbox" should be disabled
     And the field "Zulu Checkmark" matches value "1"
-    And the field "Include participants with existing presentation" matches value "Yes"
+    And the field "Include students with existing presentations" matches value "Yes"
     When I click on "None" "link" in the "#checkmark-randomselect-filtercriteria" "css_element"
     Then the field "checkmark-randomselect-checkmark-selection-selected" matches value "1"
     And the field "Alpha Checkmark" matches value "0"

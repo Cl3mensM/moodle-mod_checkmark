@@ -32,14 +32,14 @@ Feature: Testing due date settings
       | calendarteachers | 1 |
     And I press "Save and display"
     And I follow "Dashboard"
-    And I should see "Checkmark 1 is due"
+    And "Checkmark 1" "link" should exist in the "Timeline" "block"
     And I am on the "CM1" Activity page
     And I follow "Settings"
     And I set the following fields to these values:
       | calendarteachers | 0 |
     And I press "Save and display"
     And I follow "Dashboard"
-    And I should not see "Checkmark 1 is due"
+    And "Checkmark 1" "link" should not exist in the "Timeline" "block"
 
   @javascript
   Scenario: Check if due date can be changed and is displayed correctly
