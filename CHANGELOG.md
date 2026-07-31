@@ -1,6 +1,19 @@
 CHANGELOG
 =========
 
+5.2.0 (2026-07-28)
+------------------
+* Moodle 5.2 compatible version
+* [FEATURE] #6996 Add a random selection subplugin for presentations
+* [UPDATE] #8684 Update option settings on the submissions page
+* [UPDATE] #8691 Enhance activity information in the Moodle 5.2 activity chooser
+* [FEATURE] #8714 Support Checkmark add-on subplugins
+* [UPDATE] #8716 Group actions in the submissions bulk action dropdown
+* [FEATURE] #8733 Extend presentation data in Checkmark with additional fields and filters
+* [FEATURE] #8758 Link presentation summary counts to grading summary
+* [FEATURE] #8768 Add a bulk action to mark participants for presentation
+* [FIXED] #8781 Ensure per-example checkmarks remain visible in PDF exports at all text sizes
+
 5.1.0 (2026-01-06)
 ------------------
 * Moodle 5.1 compatible version
