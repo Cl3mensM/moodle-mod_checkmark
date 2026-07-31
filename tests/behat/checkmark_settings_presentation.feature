@@ -47,15 +47,27 @@ Feature: Track presentations and grade them
     And I follow "Submissions"
     Then I should see "Comment (Presentation)"
     And I should see "Grade (Presentation)"
+    And "//th[contains(concat(' ', normalize-space(@class), ' '), ' presentationstatus ')]//div[@id='hidepresentationcontainer']" "xpath_element" should exist
     And I click on "#hidepresentation" "css_element"
     And I wait until the page is ready
     Then I should see "Presentation"
     And I should not see "Comment (Presentation)"
     And I should not see "Grade (Presentation)"
+    And "th.presentationstatus" "css_element" should not be visible
     And I click on "#showpresentation" "css_element"
     And I wait until the page is ready
     Then I should see "Comment (Presentation)"
     And I should see "Grade (Presentation)"
+    And "th.presentationstatus" "css_element" should be visible
+    And I follow "Export"
+    Then "//th[contains(concat(' ', normalize-space(@class), ' '), ' presentationstatus ')]//div[@id='hidepresentationcontainer']" "xpath_element" should exist
+    And I click on "#hidepresentation" "css_element"
+    And I wait until the page is ready
+    Then "th.presentationstatus" "css_element" should not be visible
+    And "#showpresentation" "css_element" should be visible
+    And I click on "#showpresentation" "css_element"
+    And I wait until the page is ready
+    Then "th.presentationstatus" "css_element" should be visible
     And I follow "Settings"
     And I set the following fields to these values:
       | id_presentationgrading             | 1     |

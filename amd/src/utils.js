@@ -54,14 +54,14 @@ define(['jquery', 'core/str'], function($, str) {
         return allexamples;
     };
     Utils.prototype.getPresentationSelectors = function() {
-        return ['presentationgrade', 'presentationfeedback', 'presentationtimemodified'];
+        return ['presentationstatus', 'presentationgrade', 'presentationfeedback', 'presentationtimemodified'];
     };
     Utils.prototype.allExamplesCollapsed = function() {
         return $('th.colexample > .commands').length === 0;
     };
     Utils.prototype.allPresentationCollapsed = function() {
-        return $('th.presentationgrade > .commands, th.presentationfeedback > .commands, ' +
-            'th.presentationtimemodified > .commands').length === 0;
+        return $('th.presentationstatus > .commands, th.presentationgrade > .commands, ' +
+            'th.presentationfeedback > .commands, th.presentationtimemodified > .commands').length === 0;
     };
     Utils.prototype.getBaseUrl = function() {
         return this.baseurl;
@@ -100,7 +100,7 @@ define(['jquery', 'core/str'], function($, str) {
         init: function() {
             var utils = new Utils();
             baseurl = utils.getBaseUrl();
-            var hasPresentation = $('#page-mod-checkmark-submissions colgroup.presentation').length > 0;
+            var hasPresentation = $('#mod-checkmark-submissions colgroup.presentation').length > 0;
             var showallContainer = '<th><div id="showallcontainer">';
             showallContainer += '<a id="showall" href="javascript:void(0)">' +
                 '<i class="icon fa fa-plus fa-fw " id="showalltoggle"></i></a>';
@@ -131,29 +131,21 @@ define(['jquery', 'core/str'], function($, str) {
                 showpresentationContainer += '<a id="showpresentation" href="javascript:void(0)">';
                 showpresentationContainer += '<i class="icon fa fa-plus fa-fw " id="showpresentationtoggle"></i></a>';
                 showpresentationContainer += '</div></th>';
-                var presentationHeaderAnchor = $('th.outcome').last();
-                if (presentationHeaderAnchor.length === 0) {
-                    presentationHeaderAnchor = $('th.finalgrade').last();
-                }
-                presentationHeaderAnchor.after(showpresentationContainer);
+                $('th.presentationstatus').first().before(showpresentationContainer);
 
                 var showpresentationPlaceholder = '<td class="showpresentationcolumn"></td>';
-                if ($('td.outcome').length > 0) {
-                    $('td.outcome').after(showpresentationPlaceholder);
-                } else {
-                    $('td.finalgrade').after(showpresentationPlaceholder);
-                }
+                $('td.presentationstatus').first().before(showpresentationPlaceholder);
 
                 var hidepresentationContainer = '<div id="hidepresentationcontainer" class="checkmark-presentation-toggle">';
                 hidepresentationContainer += '<span id="hidepresentationlabel"></span>';
                 hidepresentationContainer += '<a id="hidepresentation" href="javascript:void(0);">';
                 hidepresentationContainer += '<i class="icon fa fa-minus fa-fw " id="hidepresentationtoggle"></i></a>';
                 hidepresentationContainer += '</div>';
-                $('th.presentationgrade, th.presentationfeedback, th.presentationtimemodified')
+                $('th.presentationstatus, th.presentationgrade, th.presentationfeedback, th.presentationtimemodified')
                     .first().prepend(hidepresentationContainer);
 
                 var showpresentationColgroup = '<colgroup class="showpresentation" span="1"><col></colgroup>';
-                $('colgroup.status_and_gradebook').after(showpresentationColgroup);
+                $('colgroup.presentation').before(showpresentationColgroup);
             }
 
             var strings = [{
@@ -200,14 +192,14 @@ define(['jquery', 'core/str'], function($, str) {
             }
 
             if (hasPresentation) {
-                if ($("th.presentationgrade, th.presentationfeedback, th.presentationtimemodified").length > 0 &&
-                        !utils.allPresentationCollapsed()) {
+                if ($("th.presentationstatus, th.presentationgrade, th.presentationfeedback, " +
+                        "th.presentationtimemodified").length > 0 && !utils.allPresentationCollapsed()) {
                     $('#hidepresentationcontainer').show();
                     $('.showpresentationcolumn').hide();
                     $('colgroup.showpresentation').hide();
                 } else {
                     $('#hidepresentationcontainer').hide();
-                    $(".presentationgrade, .presentationfeedback, .presentationtimemodified").hide();
+                    $(".presentationstatus, .presentationgrade, .presentationfeedback, .presentationtimemodified").hide();
                     $('.showpresentationcolumn').show();
                     $('colgroup.presentation').hide();
                 }
